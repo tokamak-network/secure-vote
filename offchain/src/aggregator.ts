@@ -1,5 +1,5 @@
 import { MerkleTree } from 'merkletreejs';
-import { keccak256 } from 'ethers';
+import { keccak256, AbiCoder } from 'ethers';
 import { Ciphertext, serializeCiphertext } from './crypto/elgamal';
 import { DecryptionShare, thresholdDecrypt } from './crypto/dkg';
 
@@ -109,15 +109,13 @@ export class VoteAggregator {
     }
 
     // Build Merkle tree
+    // Use same encoding as Solidity: abi.encode(index, voter, vote, timestamp)
+    const abiCoder = AbiCoder.defaultAbiCoder();
     const leaves = decryptedVotes.map((vote, index) =>
       keccak256(
-        Buffer.from(
-          JSON.stringify({
-            index,
-            voter: vote.voter,
-            vote: vote.vote.toString(),
-            timestamp: vote.timestamp,
-          })
+        abiCoder.encode(
+          ['uint256', 'address', 'uint256', 'uint256'],
+          [index, vote.voter, vote.vote, vote.timestamp]
         )
       )
     );
@@ -145,15 +143,12 @@ export class VoteAggregator {
     decryptedVotes: DecryptedVote[],
     voteIndex: number
   ): string[] {
+    const abiCoder = AbiCoder.defaultAbiCoder();
     const leaves = decryptedVotes.map((vote, index) =>
       keccak256(
-        Buffer.from(
-          JSON.stringify({
-            index,
-            voter: vote.voter,
-            vote: vote.vote.toString(),
-            timestamp: vote.timestamp,
-          })
+        abiCoder.encode(
+          ['uint256', 'address', 'uint256', 'uint256'],
+          [index, vote.voter, vote.vote, vote.timestamp]
         )
       )
     );
@@ -180,14 +175,11 @@ export class VoteAggregator {
     proof: string[],
     root: string
   ): boolean {
+    const abiCoder = AbiCoder.defaultAbiCoder();
     const leaf = keccak256(
-      Buffer.from(
-        JSON.stringify({
-          index: voteIndex,
-          voter: vote.voter,
-          vote: vote.vote.toString(),
-          timestamp: vote.timestamp,
-        })
+      abiCoder.encode(
+        ['uint256', 'address', 'uint256', 'uint256'],
+        [voteIndex, vote.voter, vote.vote, vote.timestamp]
       )
     );
 

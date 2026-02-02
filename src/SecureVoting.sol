@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./interfaces/ICommitteeEligibility.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title SecureVoting
@@ -511,5 +512,39 @@ contract SecureVoting {
         pendingEligibilityChange.executed = true;
 
         emit EligibilityRulesChanged(address(eligibilityContract));
+    }
+
+    // ============ Merkle Proof Verification ============
+
+    /**
+     * @notice Verify a single vote against the Merkle root
+     * @dev Used during dispute resolution to verify specific votes
+     * @param proposalId Proposal ID
+     * @param voteIndex Index of vote in the votes array
+     * @param voter Voter's address
+     * @param vote Vote value (0 or 1)
+     * @param timestamp Vote timestamp
+     * @param proof Merkle proof (array of hashes)
+     * @return True if proof is valid
+     */
+    function verifyVoteProof(
+        uint256 proposalId,
+        uint256 voteIndex,
+        address voter,
+        uint256 vote,
+        uint256 timestamp,
+        bytes32[] calldata proof
+    ) external view returns (bool) {
+        Tally storage tally = tallies[proposalId];
+
+        if (tally.votesRoot == bytes32(0)) {
+            return false;
+        }
+
+        // Recreate leaf hash (must match off-chain format)
+        // Using abi.encode for deterministic packing
+        bytes32 leaf = keccak256(abi.encode(voteIndex, voter, vote, timestamp));
+
+        return MerkleProof.verify(proof, tally.votesRoot, leaf);
     }
 }
