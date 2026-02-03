@@ -10,7 +10,7 @@
  * 6. Verify Merkle proof on-chain
  */
 
-import { createWalletClient, createPublicClient, http, parseAbi } from 'viem';
+import { createWalletClient, createPublicClient, createTestClient, http, parseAbi } from 'viem';
 import { foundry } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -31,6 +31,7 @@ const VOTING_ABI = parseAbi([
   'function finalizeTally(uint256 proposalId)',
   'function verifyVoteProof(uint256 proposalId, uint256 voteIndex, address voter, uint256 vote, uint256 timestamp, bytes32[] proof) view returns (bool)',
   'function tallies(uint256) view returns (uint256 yesVotes, uint256 noVotes, bytes32 votesRoot, uint256 submittedAt, address submitter, bool challenged, bool finalized)',
+  'function depositBond() payable',
 ]);
 
 async function main() {
@@ -45,6 +46,12 @@ async function main() {
   }
 
   const publicClient = createPublicClient({
+    chain: foundry,
+    transport: http(),
+  });
+
+  const testClient = createTestClient({
+    mode: 'anvil',
     chain: foundry,
     transport: http(),
   });
@@ -80,6 +87,20 @@ async function main() {
   console.log(`  ✓ Public key: (point on curve)`);
   console.log();
 
+  // ============ Step 1.5: Deposit bond for committee member ============
+  console.log('Step 1.5: Depositing bond for committee member...');
+
+  const bondHash = await client1.writeContract({
+    address: contractAddress,
+    abi: VOTING_ABI,
+    functionName: 'depositBond',
+    value: 10000000000000000000n, // 10 ether
+  });
+
+  await publicClient.waitForTransactionReceipt({ hash: bondHash });
+  console.log(`  ✓ Bond deposited (10 ETH), tx: ${bondHash.slice(0, 10)}...`);
+  console.log();
+
   // ============ Step 2: Create proposal ============
   console.log('Step 2: Creating proposal...');
 
@@ -87,7 +108,7 @@ async function main() {
     address: contractAddress,
     abi: VOTING_ABI,
     functionName: 'createProposal',
-    args: ['Should we upgrade the protocol?', 3600n, 3600n], // 1 hour each
+    args: ['Should we upgrade the protocol?', 60n, 60n], // 60 seconds each for testing
   });
 
   const proposalReceipt = await publicClient.waitForTransactionReceipt({ hash: proposalHash });
@@ -165,6 +186,16 @@ async function main() {
   console.log(`    - Yes: ${result.yesVotes}`);
   console.log(`    - No: ${result.noVotes}`);
   console.log(`    - Merkle root: ${result.votesRoot}`);
+  console.log();
+
+  // ============ Step 4.5: Advance time past commit period ============
+  console.log('Step 4.5: Advancing time past commit period...');
+
+  // Advance time by 61 seconds (past the 60-second commit period)
+  await testClient.increaseTime({ seconds: 61 });
+  await testClient.mine({ blocks: 1 });
+
+  console.log(`  ✓ Time advanced by 61 seconds`);
   console.log();
 
   // ============ Step 5: Submit tally on-chain ============

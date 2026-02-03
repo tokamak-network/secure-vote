@@ -7,16 +7,15 @@ import "../src/eligibility/WhitelistEligibility.sol";
 
 contract DeployScript is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
-        // Example initial committee (5 members)
+        // Initial committee (5 members) - Foundry default accounts
         address[] memory initialCommittee = new address[](5);
-        initialCommittee[0] = 0x1234567890123456789012345678901234567890;
-        initialCommittee[1] = 0x2345678901234567890123456789012345678901;
-        initialCommittee[2] = 0x3456789012345678901234567890123456789012;
-        initialCommittee[3] = 0x4567890123456789012345678901234567890123;
-        initialCommittee[4] = 0x5678901234567890123456789012345678901234;
+        initialCommittee[0] = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266; // account[0]
+        initialCommittee[1] = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // account[1]
+        initialCommittee[2] = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; // account[2]
+        initialCommittee[3] = 0x90F79bf6EB2c4f870365E785982E1f101E93b906; // account[3]
+        initialCommittee[4] = 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65; // account[4]
 
         // Deploy whitelist eligibility
         WhitelistEligibility eligibility = new WhitelistEligibility(initialCommittee);
