@@ -176,11 +176,35 @@ Happy path는 ZKP 없이 동작.
 
 ### Step 6: 프론트엔드 연동
 
-**작업:**
-- [ ] 키 생성/변경 UI
-- [ ] 메시지 암호화 및 제출
-- [ ] 키 변경 기능
-- [ ] 결과 조회
+**상세 UI 설계:** `ui-design.md` 참조
+
+**페이지 구조:**
+```
+frontend/pages/
+├── index.tsx           # 기존 유지
+├── vote/[id].tsx       # 키 관리 + 투표 (대폭 수정)
+├── coordinator.tsx     # 신규 - Coordinator 대시보드
+├── committee.tsx       # 수정 - Challenge period 반영
+└── results/[id].tsx    # 기존 유지
+```
+
+**API 엔드포인트:**
+```
+frontend/pages/api/
+├── generate-voter-key.ts   # 신규
+├── submit-message.ts       # encrypt-vote 대체
+├── process-messages.ts     # 신규 (Coordinator용)
+├── submit-state-root.ts    # 신규 (Coordinator용)
+├── challenge.ts            # 신규
+├── finalize-tally.ts       # decrypt-tally 수정
+└── public-key.ts           # 기존 유지
+```
+
+**핵심 UI 변경:**
+1. 투표 페이지: Voter 키 생성/관리 추가
+2. 키 변경 플로우: "Change Key & Revote" 버튼
+3. Coordinator 페이지: 메시지 처리 및 state root 제출
+4. Challenge period 표시 및 challenge 버튼
 
 ---
 
@@ -207,11 +231,16 @@ Happy path는 ZKP 없이 동작.
 9. script/DeployMACI.s.sol
 ```
 
-### Week 4: 통합
+### Week 4: Frontend (상세)
 ```
-10. offchain/src/integration/maci-contract.ts
-11. offchain/test/integration.test.ts
-12. 프론트엔드 연동
+10. frontend/pages/api/generate-voter-key.ts
+11. frontend/pages/api/submit-message.ts
+12. frontend/pages/vote/[id].tsx (키 관리 UI)
+13. frontend/pages/coordinator.tsx
+14. frontend/pages/api/process-messages.ts
+15. frontend/pages/api/submit-state-root.ts
+16. frontend/pages/committee.tsx (수정)
+17. E2E 테스트
 ```
 
 ---

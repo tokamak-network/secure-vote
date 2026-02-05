@@ -9,6 +9,7 @@
 
 **상세 설계:** `maci-fraud-proof-design.md`
 **구현 계획:** `implementation-plan.md`
+**UI 설계:** `ui-design.md`
 **연구 자료:** `research/` 폴더
 
 ---
