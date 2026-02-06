@@ -170,3 +170,13 @@ export function deserializeCiphertext(hex: string): Ciphertext {
 
   return { c1, c2 };
 }
+
+/**
+ * Create a G1 point from x,y coordinates
+ * Useful for reconstructing public keys from stored coordinates
+ */
+export function pointFromCoordinates(x: bigint | string, y: bigint | string): G1Point {
+  const xBigInt = typeof x === 'string' ? BigInt(x) : x;
+  const yBigInt = typeof y === 'string' ? BigInt(y) : y;
+  return bn254.G1.Point.fromAffine({ x: xBigInt, y: yBigInt });
+}

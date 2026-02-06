@@ -1,0 +1,27 @@
+{
+  "description": "Invalid proof for negative testing",
+  "note": "This proof has zero values that should be rejected",
+  "proof": {
+    "pi_a": ["0", "0", "1"],
+    "pi_b": [
+      ["0", "0"],
+      ["0", "0"],
+      ["1", "0"]
+    ],
+    "pi_c": ["0", "0", "1"],
+    "protocol": "groth16",
+    "curve": "bn128"
+  },
+  "publicSignals": [
+    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+  ],
+  "solidityCalldata": {
+    "pA": ["0", "0"],
+    "pB": [
+      ["0", "0"],
+      ["0", "0"]
+    ],
+    "pC": ["0", "0"]
+  },
+  "expectedError": "InvalidProof"
+}

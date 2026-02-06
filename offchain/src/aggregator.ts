@@ -60,21 +60,31 @@ export class VoteAggregator {
    * Decrypt all votes using threshold decryption shares
    *
    * @param sharesMap Map of voter address to decryption shares
-   * @returns Array of decrypted votes
+   * @param skipFailures If true, skip votes that fail to decrypt instead of throwing
+   * @returns Array of decrypted votes (and optionally failed voters)
    */
   decryptVotes(
-    sharesMap: Map<string, DecryptionShare[]>
+    sharesMap: Map<string, DecryptionShare[]>,
+    skipFailures: boolean = false
   ): DecryptedVote[] {
     const decryptedVotes: DecryptedVote[] = [];
 
     for (const [voter, voteData] of this.votes.entries()) {
       const shares = sharesMap.get(voter);
       if (!shares) {
+        if (skipFailures) {
+          console.log(`Skipping voter ${voter}: no decryption shares`);
+          continue;
+        }
         throw new Error(`No decryption shares for voter ${voter}`);
       }
 
       const decryptedValue = thresholdDecrypt(voteData.ciphertext, shares);
       if (decryptedValue === null) {
+        if (skipFailures) {
+          console.log(`Skipping voter ${voter}: decryption failed (wrong key?)`);
+          continue;
+        }
         throw new Error(`Failed to decrypt vote from ${voter}`);
       }
 

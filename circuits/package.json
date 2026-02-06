@@ -1,0 +1,14 @@
+{
+  "name": "secure-vote-circuits",
+  "version": "1.0.0",
+  "description": "ZKP circuits for secure voting system",
+  "scripts": {
+    "build": "./scripts/compile.sh",
+    "setup": "./scripts/setup.sh",
+    "clean": "rm -rf build ptau"
+  },
+  "devDependencies": {
+    "snarkjs": "^0.7.0",
+    "circomlib": "^2.0.5"
+  }
+}

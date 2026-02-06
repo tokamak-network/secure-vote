@@ -15,3 +15,10 @@ docs/
 
 # Node modules
 node_modules/
+
+# Circuit build artifacts (regenerate with scripts/compile-circuit.sh)
+circuits/build/
+circuits/ptau/
+
+# Bun lock
+offchain/bun.lock

@@ -1,0 +1,35 @@
+{
+  "description": "Sample witness input for SingleMessageProcessor circuit",
+  "note": "Values are placeholders - actual inputs come from off-chain processor",
+  "publicInputs": {
+    "prevStateRoot": "0",
+    "newStateRoot": "12345678901234567890123456789012345678901234567890",
+    "encryptedVoterPubKeyX": "1000",
+    "encryptedVoterPubKeyY": "2000",
+    "encryptedData": ["100", "200", "300", "400"],
+    "ephemeralPubKeyX": "3000",
+    "ephemeralPubKeyY": "4000",
+    "messageIndex": "0",
+    "coordinatorPubKeyX": "5000",
+    "coordinatorPubKeyY": "6000"
+  },
+  "privateInputs": {
+    "coordinatorPrivKey": "123456789",
+    "decryptedVote": "1",
+    "decryptedNonce": "1",
+    "voterPubKeyX": "7000",
+    "voterPubKeyY": "8000",
+    "previousVoterNonce": "0",
+    "previousVoterVote": "255",
+    "pathIndices": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "siblings": [
+      "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+      "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"
+    ]
+  },
+  "circuit": {
+    "name": "SingleMessageProcessor",
+    "treeDepth": 20,
+    "numPublicInputs": 14
+  }
+}

@@ -15,6 +15,7 @@ export {
   deserializePoint,
   serializeCiphertext,
   deserializeCiphertext,
+  pointFromCoordinates,
   type Ciphertext,
   type KeyPair,
   type G1Point,
@@ -50,3 +51,53 @@ export {
   type DecryptedVote,
   type TallyResult,
 } from './aggregator';
+
+// Silent Setup (n-of-n threshold encryption)
+export {
+  generateMemberKeyPair,
+  aggregatePublicKeys,
+  createPartialDecryption,
+  combinePartialDecryptions,
+  silentDecrypt,
+  type MemberKeyPair,
+  type PartialDecryption,
+} from './crypto/silent-setup';
+
+// MACI Cryptography
+export {
+  // Key management
+  generateVoterKeyPair,
+  changeVoterKey,
+  generateCoordinatorKeyPair,
+  serializeVoterKey,
+  deserializeVoterKey,
+  getPublicKeyHash,
+  verifyKeyPair,
+  // Message encryption
+  encryptMessage,
+  decryptMessage as decryptMACIMessage,
+  serializeMessage,
+  deserializeMessage,
+  createKeyChangeMessage,
+  // Types
+  type VoterKeyPair,
+  type SerializedVoterKey,
+  type CoordinatorKeyPair,
+  type Vote as MACIVote,
+  type EncryptedMessage,
+  type SerializedMessage,
+  type DecryptedMessage,
+} from './crypto/maci';
+
+// Coordinator
+export {
+  StateManager,
+  MessageProcessor,
+  createProcessor,
+  createProcessorWithKey,
+  computeMerkleRoot,
+  type VoterState,
+  type CoordinatorState,
+  type ProcessedMessage,
+  type BatchResult,
+} from './coordinator';
