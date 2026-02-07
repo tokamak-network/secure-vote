@@ -401,60 +401,6 @@ describe('Full Voting Flow', () => {
   });
 });
 
-describe('Real Proof Verification', () => {
-  // NOTE: snarkjs proof generation/verification uses worker threads that are
-  // incompatible with Bun runtime. Run these tests with Node.js:
-  //   cd offchain && node test-proof.mjs
-  // Or use the forge tests for on-chain verification:
-  //   forge test --match-contract GeneratedVerifier
-
-  it('validates proof fixture structure', async () => {
-    const fs = await import('fs');
-    const fixturePath = process.cwd() + '/../test/fixtures/real-proof.json';
-
-    if (!fs.existsSync(fixturePath)) {
-      console.log('Skipping: proof fixture not found.');
-      console.log('Generate it: cd offchain && node test-proof.mjs');
-      return;
-    }
-
-    const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
-
-    // Validate proof structure
-    expect(fixture.proof).toBeDefined();
-    expect(fixture.proof.pi_a).toHaveLength(3);
-    expect(fixture.proof.pi_b).toHaveLength(3);
-    expect(fixture.proof.pi_c).toHaveLength(3);
-    expect(fixture.proof.protocol).toBe('groth16');
-    expect(fixture.proof.curve).toBe('bn128');
-
-    // Validate public signals (13 for our circuit)
-    expect(fixture.publicSignals).toBeDefined();
-    expect(fixture.publicSignals.length).toBe(13);
-
-    // Validate calldata structure for Solidity
-    expect(fixture.calldata).toBeDefined();
-    expect(fixture.calldata.pA).toHaveLength(2);
-    expect(fixture.calldata.pB).toHaveLength(2);
-    expect(fixture.calldata.pC).toHaveLength(2);
-    expect(fixture.calldata.pubSignals).toHaveLength(13);
-
-    // Check pB is reversed for Solidity (pi_b[0][1], pi_b[0][0])
-    expect(fixture.calldata.pB[0][0]).toBe(fixture.proof.pi_b[0][1]);
-    expect(fixture.calldata.pB[0][1]).toBe(fixture.proof.pi_b[0][0]);
-
-    console.log('Proof fixture structure is valid');
-    console.log('Public signals count:', fixture.publicSignals.length);
-    console.log('prevStateRoot:', fixture.publicSignals[0].substring(0, 20) + '...');
-    console.log('newStateRoot:', fixture.publicSignals[1].substring(0, 20) + '...');
-  });
-
-  it('confirms artifacts are compiled', async () => {
-    const prover = new Prover({ projectRoot: process.cwd() + '/..' });
-    const artifacts = await prover.checkArtifacts();
-
-    expect(artifacts.ready).toBe(true);
-    expect(artifacts.missing).toHaveLength(0);
-    console.log('All circuit artifacts present');
-  });
-});
+// Real ZKP proof generation/verification tests are in test-proof.mjs (Node.js).
+// snarkjs worker threads are incompatible with Bun.
+// Run: node test-proof.mjs

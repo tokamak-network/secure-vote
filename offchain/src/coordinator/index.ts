@@ -13,7 +13,6 @@ export type {
 } from './state';
 export {
   StateManager,
-  serializeVoterState,
   hashVoterState,
   computeMerkleRoot,
 } from './state';
