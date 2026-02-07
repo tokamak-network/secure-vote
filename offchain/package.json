@@ -6,9 +6,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "bun test --timeout 30000 && node test-proof.mjs",
+    "test": "bun test --timeout 30000 && node --expose-gc --max-old-space-size=4096 test-proof.mjs",
     "test:bun": "bun test --timeout 30000",
-    "test:zkp": "node test-proof.mjs",
+    "test:zkp": "tsc && node --expose-gc --max-old-space-size=4096 test-proof.mjs",
     "test:watch": "bun test --watch --timeout 30000",
     "example": "ts-node examples/voting-flow.ts",
     "integration": "ts-node integration/full-flow.ts"

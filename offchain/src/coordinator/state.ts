@@ -119,15 +119,14 @@ export function hashVoterStateSync(state: VoterState): bigint {
 
 /**
  * Compute Merkle root from voter states using Poseidon
+ *
+ * Uses a fixed depth-20 binary tree to match the circuit's MerkleUpdate template.
+ * Leaves are placed at positions 0..n-1, remaining positions are 0 (empty).
  */
 export async function computeMerkleRoot(
   voters: Map<string, VoterState>
 ): Promise<bigint> {
   await initPoseidon();
-
-  if (voters.size === 0) {
-    return 0n;
-  }
 
   // Sort by pubKeyHash for deterministic ordering
   const sortedEntries = Array.from(voters.entries()).sort((a, b) =>
@@ -140,46 +139,94 @@ export async function computeMerkleRoot(
     leaves.push(hashVoterStateSync(state));
   }
 
-  // Build Merkle tree bottom-up
-  return buildMerkleRootFromLeaves(leaves);
+  // Build fixed depth-20 Merkle tree
+  return buildMerkleRootFixedDepth(leaves, TREE_DEPTH);
 }
 
 /**
- * Build Merkle root from leaf hashes using Poseidon
+ * Precomputed zero-subtree hashes for each level.
+ * zeroHashes[0] = 0 (empty leaf)
+ * zeroHashes[i] = Poseidon(zeroHashes[i-1], zeroHashes[i-1])
  */
-function buildMerkleRootFromLeaves(leaves: bigint[]): bigint {
-  if (leaves.length === 0) {
-    return 0n;
-  }
+let zeroHashes: bigint[] | null = null;
 
-  if (leaves.length === 1) {
-    return leaves[0];
+function getZeroHashes(): bigint[] {
+  if (zeroHashes) return zeroHashes;
+  zeroHashes = new Array(TREE_DEPTH + 1);
+  zeroHashes[0] = 0n;
+  for (let i = 1; i <= TREE_DEPTH; i++) {
+    zeroHashes[i] = poseidonHash2Sync(zeroHashes[i - 1], zeroHashes[i - 1]);
   }
-
-  // Pad to even length
-  const paddedLeaves = [...leaves];
-  if (paddedLeaves.length % 2 === 1) {
-    paddedLeaves.push(paddedLeaves[paddedLeaves.length - 1]);
-  }
-
-  // Compute parent level
-  const parents: bigint[] = [];
-  for (let i = 0; i < paddedLeaves.length; i += 2) {
-    const hash = poseidonHash2Sync(paddedLeaves[i], paddedLeaves[i + 1]);
-    parents.push(hash);
-  }
-
-  return buildMerkleRootFromLeaves(parents);
+  return zeroHashes;
 }
 
 /**
- * Generate Merkle proof for a voter
+ * Build Merkle root using fixed depth with zero-padding for empty leaves.
+ * Matches the circuit's MerkleUpdate template exactly.
+ *
+ * Optimized: uses precomputed zero-subtree hashes so we only hash
+ * populated portions of the tree.
+ */
+function buildMerkleRootFixedDepth(leaves: bigint[], depth: number): bigint {
+  const zeros = getZeroHashes();
+
+  // Sparse representation: only track non-zero nodes
+  let currentLevel = new Map<number, bigint>();
+  for (let i = 0; i < leaves.length; i++) {
+    currentLevel.set(i, leaves[i]);
+  }
+
+  for (let level = 0; level < depth; level++) {
+    const nextLevel = new Map<number, bigint>();
+    // Collect all parent indices that have at least one non-zero child
+    const parentIndices = new Set<number>();
+    for (const idx of currentLevel.keys()) {
+      parentIndices.add(Math.floor(idx / 2));
+    }
+    for (const parentIdx of parentIndices) {
+      const left = currentLevel.get(parentIdx * 2) ?? zeros[level];
+      const right = currentLevel.get(parentIdx * 2 + 1) ?? zeros[level];
+      const hash = poseidonHash2Sync(left, right);
+      // Only store if different from zero-subtree hash at next level
+      if (hash !== zeros[level + 1]) {
+        nextLevel.set(parentIdx, hash);
+      }
+    }
+    currentLevel = nextLevel;
+  }
+
+  return currentLevel.get(0) ?? zeros[depth];
+}
+
+/**
+ * Build compact Merkle root (variable depth) from leaf hashes.
+ * Used for intermediate state commitments (not circuit-facing).
+ */
+function buildCompactMerkleRoot(leaves: bigint[]): bigint {
+  if (leaves.length === 0) return 0n;
+  if (leaves.length === 1) return leaves[0];
+
+  const padded = [...leaves];
+  if (padded.length % 2 === 1) padded.push(padded[padded.length - 1]);
+
+  const parents: bigint[] = [];
+  for (let i = 0; i < padded.length; i += 2) {
+    parents.push(poseidonHash2Sync(padded[i], padded[i + 1]));
+  }
+  return buildCompactMerkleRoot(parents);
+}
+
+/**
+ * Generate Merkle proof for a voter in a fixed depth-20 tree.
+ * Returns exactly TREE_DEPTH siblings and pathIndices.
  */
 export async function generateMerkleProof(
   voters: Map<string, VoterState>,
   targetPubKeyHash: string
 ): Promise<MerkleProof | null> {
   await initPoseidon();
+
+  const zeros = getZeroHashes();
 
   // Sort voters
   const sortedEntries = Array.from(voters.entries()).sort((a, b) =>
@@ -194,48 +241,52 @@ export async function generateMerkleProof(
     return null;
   }
 
-  // Build leaves
-  const leaves: bigint[] = [];
-  for (const [_, state] of sortedEntries) {
-    leaves.push(hashVoterStateSync(state));
+  // Build leaves as sparse map
+  const leafMap = new Map<number, bigint>();
+  for (let i = 0; i < sortedEntries.length; i++) {
+    leafMap.set(i, hashVoterStateSync(sortedEntries[i][1]));
   }
 
-  // Pad to power of 2
-  const targetSize = Math.pow(2, Math.ceil(Math.log2(Math.max(leaves.length, 2))));
-  const paddedLeaves = [...leaves];
-  while (paddedLeaves.length < targetSize) {
-    paddedLeaves.push(paddedLeaves[paddedLeaves.length - 1]);
-  }
-
-  // Build proof
+  // Build proof through TREE_DEPTH levels
   const siblings: bigint[] = [];
   const pathIndices: number[] = [];
   let currentIndex = targetIndex;
-  let currentLevel = paddedLeaves;
+  let currentLevel = leafMap;
 
-  while (currentLevel.length > 1) {
-    const siblingIndex =
-      currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
-    siblings.push(currentLevel[siblingIndex] || currentLevel[currentIndex]);
-    pathIndices.push(currentIndex % 2); // 0 = left, 1 = right
+  for (let level = 0; level < TREE_DEPTH; level++) {
+    const siblingIndex = currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
+    siblings.push(currentLevel.get(siblingIndex) ?? zeros[level]);
+    pathIndices.push(currentIndex % 2);
 
-    // Compute next level
-    const nextLevel: bigint[] = [];
-    for (let i = 0; i < currentLevel.length; i += 2) {
-      const left = currentLevel[i];
-      const right = currentLevel[i + 1] || left;
-      nextLevel.push(poseidonHash2Sync(left, right));
+    // Compute next level (sparse)
+    const nextLevel = new Map<number, bigint>();
+    const parentIndices = new Set<number>();
+    for (const idx of currentLevel.keys()) {
+      parentIndices.add(Math.floor(idx / 2));
+    }
+    // Also ensure the target's parent is computed
+    parentIndices.add(Math.floor(currentIndex / 2));
+
+    for (const parentIdx of parentIndices) {
+      const left = currentLevel.get(parentIdx * 2) ?? zeros[level];
+      const right = currentLevel.get(parentIdx * 2 + 1) ?? zeros[level];
+      const hash = poseidonHash2Sync(left, right);
+      if (hash !== zeros[level + 1]) {
+        nextLevel.set(parentIdx, hash);
+      }
     }
 
     currentIndex = Math.floor(currentIndex / 2);
     currentLevel = nextLevel;
   }
 
+  const root = currentLevel.get(0) ?? zeros[TREE_DEPTH];
+
   return {
-    leaf: leaves[targetIndex],
+    leaf: leafMap.get(targetIndex)!,
     siblings,
     pathIndices,
-    root: currentLevel[0],
+    root,
   };
 }
 
@@ -269,6 +320,23 @@ export class StateManager {
       throw new Error('StateManager not initialized. Call init() first.');
     }
     this.initialized = true;
+  }
+
+  /**
+   * Pre-register a voter with zero-state (vote=0, nonce=0).
+   * This places Poseidon(pubKeyX, pubKeyY, 0, 0) in the Merkle tree so
+   * the circuit's MerkleUpdate can verify the old root for new voters.
+   */
+  preRegisterVoter(pubKey: G1Point): void {
+    const pubKeyHash = getPublicKeyHash(pubKey);
+    if (this.voters.has(pubKeyHash)) return;
+
+    this.voters.set(pubKeyHash, {
+      pubKey,
+      pubKeyHash,
+      vote: 0,
+      nonce: 0,
+    });
   }
 
   /**
@@ -534,7 +602,7 @@ export class StateManager {
       leaves.push(hash);
     }
 
-    return buildMerkleRootFromLeaves(leaves);
+    return buildCompactMerkleRoot(leaves);
   }
 
   /**

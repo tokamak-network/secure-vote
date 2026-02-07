@@ -202,6 +202,131 @@ tests.push(test('saves proof fixture for Solidity tests', async () => {
   assert.deepEqual(loaded.calldata.pB[0][0], proof.pi_b[0][1], 'pB should be reversed for Solidity');
 }));
 
+// ============ Coordinator-based N-vote proof tests ============
+
+// Import coordinator modules from CJS dist build
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const {
+  createProcessorWithKey,
+  generateCoordinatorKeyPair,
+  generateVoterKeyPair,
+  encryptMessage,
+} = require('./dist/index.js');
+
+console.log('--- Coordinator Pipeline Tests ---\n');
+
+// Scenario 1: 3 voters sequential voting
+console.log('Generating coordinator key and processing 3 votes...');
+const coordKey = generateCoordinatorKeyPair();
+const processor = await createProcessorWithKey(coordKey);
+
+const voters = [
+  generateVoterKeyPair(1),  // nonce=1 (vote=Yes)
+  generateVoterKeyPair(1),  // nonce=1 (vote=No)
+  generateVoterKeyPair(1),  // nonce=1 (vote=Yes)
+];
+const voteValues = [1, 0, 1];
+
+// Pre-register all voters (creates zero-state leaves in the Merkle tree)
+await processor.preRegisterVoters(voters.map(v => v.publicKey));
+
+// Process each message and immediately capture witness
+const witnessInputs = [];
+for (let i = 0; i < voters.length; i++) {
+  const encrypted = encryptMessage(voters[i], coordKey.publicKey, voteValues[i]);
+  const result = await processor.processMessage(encrypted);
+  assert.ok(result.applied, `vote ${i} should be applied`);
+
+  // Capture witness IMMEDIATELY after processMessage (before next message changes the tree)
+  const wit = await processor.generateWitnessInput(i);
+  witnessInputs.push(wit);
+}
+
+// Generate proofs for all 3 witnesses
+const proofs3 = [];
+const signals3 = [];
+console.log('Generating 3 Groth16 proofs from coordinator pipeline...');
+const start3 = Date.now();
+for (let i = 0; i < witnessInputs.length; i++) {
+  const { proof: p, publicSignals: ps } = await snarkjs.groth16.fullProve(witnessInputs[i], wasmPath, zkeyPath);
+  proofs3.push(p);
+  signals3.push(ps);
+  if (global.gc) global.gc();
+}
+console.log(`3 proofs generated in ${Date.now() - start3}ms\n`);
+
+tests.push(test('[3-voter] all proofs verify off-chain', async () => {
+  for (let i = 0; i < proofs3.length; i++) {
+    const valid = await snarkjs.groth16.verify(vkey, signals3[i], proofs3[i]);
+    assert.equal(valid, true, `proof ${i} should verify`);
+  }
+}));
+
+tests.push(test('[3-voter] state root chaining: proof[i].newStateRoot === proof[i+1].prevStateRoot', async () => {
+  // publicSignals[0] = prevStateRoot, publicSignals[1] = newStateRoot
+  for (let i = 0; i < signals3.length - 1; i++) {
+    assert.equal(
+      signals3[i][1],   // newStateRoot of proof i
+      signals3[i + 1][0], // prevStateRoot of proof i+1
+      `chain break at ${i}->${i + 1}`
+    );
+  }
+}));
+
+tests.push(test('[3-voter] non-zero siblings exist after first voter', async () => {
+  // First voter gets zero siblings (empty tree), but 2nd and 3rd should have non-zero siblings
+  const hasNonZeroSiblings = witnessInputs[2].siblings.some(s => s !== '0');
+  assert.ok(hasNonZeroSiblings, 'voter 2 should have non-zero Merkle siblings');
+}));
+
+// Scenario 2: Vote update (re-vote)
+console.log('Processing vote update (re-vote) scenario...');
+const coordKey2 = generateCoordinatorKeyPair();
+const processor2 = await createProcessorWithKey(coordKey2);
+
+// First vote: nonce=1, Yes
+const reVoter = generateVoterKeyPair(1);
+await processor2.preRegisterVoters([reVoter.publicKey]);
+const enc1 = encryptMessage(reVoter, coordKey2.publicKey, 1);
+const res1 = await processor2.processMessage(enc1);
+assert.ok(res1.applied, 'initial vote should be applied');
+const wit1 = await processor2.generateWitnessInput(0);
+
+// Re-vote: same voter, nonce=2, No
+const reVoterUpdated = { ...reVoter, nonce: 2 };
+const enc2 = encryptMessage(reVoterUpdated, coordKey2.publicKey, 0);
+const res2 = await processor2.processMessage(enc2);
+assert.ok(res2.applied, 're-vote should be applied');
+const wit2 = await processor2.generateWitnessInput(1);
+
+// Generate proofs
+console.log('Generating 2 Groth16 proofs for re-vote scenario...');
+const startRe = Date.now();
+const { proof: rp1, publicSignals: rs1 } = await snarkjs.groth16.fullProve(wit1, wasmPath, zkeyPath);
+if (global.gc) global.gc();
+const { proof: rp2, publicSignals: rs2 } = await snarkjs.groth16.fullProve(wit2, wasmPath, zkeyPath);
+if (global.gc) global.gc();
+console.log(`2 re-vote proofs generated in ${Date.now() - startRe}ms\n`);
+
+tests.push(test('[re-vote] initial vote proof verifies', async () => {
+  const valid = await snarkjs.groth16.verify(vkey, rs1, rp1);
+  assert.equal(valid, true, 'initial vote proof should verify');
+}));
+
+tests.push(test('[re-vote] updated vote proof verifies', async () => {
+  const valid = await snarkjs.groth16.verify(vkey, rs2, rp2);
+  assert.equal(valid, true, 're-vote proof should verify');
+}));
+
+tests.push(test('[re-vote] state root chaining holds', async () => {
+  assert.equal(rs1[1], rs2[0], 'newStateRoot of vote1 should equal prevStateRoot of vote2');
+}));
+
+tests.push(test('[re-vote] state roots differ (vote changed)', async () => {
+  assert.notEqual(rs1[1], rs2[1], 'newStateRoots should differ after vote update');
+}));
+
 // ============ Run ============
 
 for (const t of tests) {

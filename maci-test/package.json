@@ -1,0 +1,37 @@
+{
+  "name": "maci-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MACI 5-vote E2E verification test",
+  "scripts": {
+    "compile": "hardhat compile && hardhat build-poseidon",
+    "test": "hardhat test",
+    "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' hardhat test test/five-vote-e2e.ts --timeout 300000",
+    "download-zkeys": "bash scripts/download-zkeys.sh"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "blake-hash",
+      "keccak",
+      "secp256k1",
+      "esbuild"
+    ]
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "circomlibjs": "^0.1.7",
+    "maci-cli": "2.5.0",
+    "maci-contracts": "2.5.0",
+    "maci-core": "2.5.0",
+    "maci-crypto": "2.5.0",
+    "maci-domainobjs": "2.5.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "hardhat": "^2.28.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

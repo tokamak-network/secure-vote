@@ -22,3 +22,10 @@ circuits/ptau/
 
 # Bun lock
 offchain/bun.lock
+
+# MACI test artifacts
+maci-test/zkeys/
+maci-test/proofs/
+maci-test/artifacts/
+maci-test/cache/
+maci-test/typechain-types/

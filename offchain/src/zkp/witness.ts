@@ -145,8 +145,8 @@ export async function generateWitnessInput(data: WitnessInputData): Promise<Circ
   // Get encrypted voter public key coordinates
   const encVoterPubKey = getPointCoords(encryptedMessage.voterPubKey);
 
-  // Previous voter state (or defaults for new voter)
-  const prevVote = prevState?.vote ?? 255; // 255 represents null/unvoted
+  // Previous voter state (or defaults for new voter with zero-state)
+  const prevVote = prevState?.vote ?? 0;
   const prevNonce = prevState?.nonce ?? 0;
 
   // Pad merkle proof to tree depth
@@ -197,7 +197,7 @@ export async function generateWitnessInput(data: WitnessInputData): Promise<Circ
     voterPubKeyX: toCircuitString(voterPubKey.x),
     voterPubKeyY: toCircuitString(voterPubKey.y),
     previousVoterNonce: toCircuitString(BigInt(prevNonce)),
-    previousVoterVote: toCircuitString(BigInt(prevVote === null ? 255 : prevVote)),
+    previousVoterVote: toCircuitString(BigInt(prevVote)),
     pathIndices: paddedPathIndices.slice(0, TREE_DEPTH),
     siblings: paddedSiblings.map(toCircuitString),
   };

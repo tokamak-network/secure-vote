@@ -175,9 +175,27 @@ cd offchain && node test-proof.mjs
 
 ---
 
+### Phase 7: 공식 MACI 패키지 E2E 검증 ✅ (2026-02-07)
+- [x] `maci-test/` 서브디렉토리에 격리된 테스트 환경 구축
+- [x] MACI v2.5.0 패키지 설치 (maci-contracts, maci-cli, maci-core, maci-crypto, maci-domainobjs)
+- [x] Hardhat + OpenZeppelin + circomlibjs 빌드 환경 설정
+- [x] Poseidon 바이트코드 생성 (circomlibjs poseidon_gencontract)
+- [x] 테스트 zkey 다운로드 (10-2-1-2 파라미터, batch size=5)
+- [x] 5표 E2E 테스트 작성 및 통과 (8 tests, 17s)
+  - MACI 컨트랙트 배포 성공
+  - 5명 voter 등록 완료
+  - 5건 투표 메시지 게시 (2 No, 3 Yes)
+  - ProcessMessages proof 2개 생성 (10.3s, WASM)
+  - TallyVotes proof 3개 생성 (3.9s, WASM)
+  - On-chain 검증 통과 (1.45s)
+  - 최종 tally: No=2, Yes=3 ✅
+
+---
+
 ## 다음 단계 (선택사항)
 
 - [x] ~~실제 circuit 컴파일 및 GeneratedVerifier.sol 생성~~ ✅ Done
+- [x] ~~공식 MACI 패키지 E2E 검증~~ ✅ Done
 - [ ] 프로덕션용 trusted setup (multi-party ceremony)
 - [ ] Gas 최적화
 - [ ] 기존 BisectionGame 테스트 업데이트 (legacy proof 데이터 수정)

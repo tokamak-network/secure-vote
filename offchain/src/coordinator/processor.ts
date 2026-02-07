@@ -134,6 +134,18 @@ export class MessageProcessor {
   }
 
   /**
+   * Pre-register voters with zero-state (vote=0, nonce=0) in the Merkle tree.
+   * Must be called before processing messages to ensure the circuit's
+   * MerkleUpdate can verify old roots for new voters.
+   */
+  async preRegisterVoters(pubKeys: G1Point[]): Promise<void> {
+    await this.ensureInit();
+    for (const pubKey of pubKeys) {
+      this.stateManager.preRegisterVoter(pubKey);
+    }
+  }
+
+  /**
    * Process a single encrypted message
    * Tracks intermediate state for bisection fraud proof
    */
