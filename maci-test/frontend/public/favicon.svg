@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="2" fill="#161616"/>
+  <!-- Ballot box body -->
+  <rect x="7" y="12" width="18" height="14" rx="1" stroke="#f4f4f4" stroke-width="1.5" fill="none"/>
+  <!-- Slot -->
+  <rect x="12" y="11" width="8" height="2.5" rx="0.5" fill="#161616" stroke="#f4f4f4" stroke-width="1.2"/>
+  <!-- Ballot paper going in -->
+  <rect x="13.5" y="6" width="5" height="7" rx="0.5" fill="#4589ff" opacity="0.9"/>
+  <!-- Checkmark on ballot -->
+  <polyline points="14.5,10 15.5,11.2 17.5,8.5" stroke="#161616" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

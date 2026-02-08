@@ -1,0 +1,189 @@
+/**
+ * One-click deployment script for MACI + MaciRLA platform.
+ *
+ * Deploys all contracts and writes addresses to frontend/.env.local.
+ *
+ * Usage: npx hardhat run scripts/deploy-platform.ts --network hardhat
+ *   or:  npx hardhat run scripts/deploy-platform.ts --network localhost
+ */
+import hre from "hardhat";
+const { ethers } = hre;
+import * as fs from "fs";
+import * as path from "path";
+import {
+  deployMaci,
+  deployVkRegistry,
+  deployVerifier,
+  deployFreeForAllSignUpGatekeeper,
+  deployConstantInitialVoiceCreditProxy,
+  getDefaultSigner,
+  EMode,
+} from "maci-contracts";
+import {
+  Poll__factory,
+  AccQueueQuinaryMaci__factory,
+} from "maci-contracts";
+import { Keypair, VerifyingKey } from "maci-domainobjs";
+
+// ── Config ──────────────────────────────────────────────────────────
+const INITIAL_VOICE_CREDITS = 100;
+const POLL_DURATION = 3600; // 1 hour
+const COORDINATOR_STAKE = ethers.parseEther("0.1");
+const PROOF_COST_ESTIMATE = ethers.parseEther("0.001");
+
+// Circuit params (10-2-1-2)
+const STATE_TREE_DEPTH = 10;
+const INT_STATE_TREE_DEPTH = 1;
+const MSG_TREE_DEPTH = 2;
+const MSG_TREE_SUB_DEPTH = 1;
+const VOTE_OPTION_TREE_DEPTH = 2;
+const MSG_BATCH_SIZE = 5; // 5^1
+
+const ZKEYS_DIR = path.resolve(__dirname, "../zkeys");
+const PM_DIR = "ProcessMessages_10-2-1-2_test";
+const PM_VK_JSON = path.join(ZKEYS_DIR, PM_DIR, "groth16_vkey.json");
+const TV_DIR = "TallyVotes_10-1-2_test";
+const TV_VK_JSON = path.join(ZKEYS_DIR, TV_DIR, "groth16_vkey.json");
+
+function loadVk(vkPath: string): VerifyingKey {
+  const raw = JSON.parse(fs.readFileSync(vkPath, "utf8"));
+  return VerifyingKey.fromObj(raw);
+}
+
+async function main() {
+  console.log("=== MACI + MaciRLA Platform Deployment ===\n");
+
+  const deployer = await getDefaultSigner();
+  const deployerAddr = await deployer.getAddress();
+  console.log(`Deployer: ${deployerAddr}`);
+  console.log(`Balance: ${ethers.formatEther(await ethers.provider.getBalance(deployerAddr))} ETH\n`);
+
+  // 1. Deploy infrastructure
+  console.log("1. Deploying MACI infrastructure...");
+  const gatekeeperContract = await deployFreeForAllSignUpGatekeeper(deployer, true);
+  const voiceCreditProxyContract = await deployConstantInitialVoiceCreditProxy(
+    INITIAL_VOICE_CREDITS, deployer, true
+  );
+  const verifierContract = await deployVerifier(deployer, true);
+  const vkRegistryContract = await deployVkRegistry(deployer, true);
+
+  const r = await deployMaci({
+    signUpTokenGatekeeperContractAddress: await gatekeeperContract.getAddress(),
+    initialVoiceCreditBalanceAddress: await voiceCreditProxyContract.getAddress(),
+    signer: deployer,
+    stateTreeDepth: STATE_TREE_DEPTH,
+    quiet: true,
+  });
+  const maciContract = r.maciContract;
+  const maciAddress = await maciContract.getAddress();
+  console.log(`  MACI: ${maciAddress}`);
+
+  // 2. Register VKs
+  console.log("2. Registering verifying keys...");
+  if (!fs.existsSync(PM_VK_JSON) || !fs.existsSync(TV_VK_JSON)) {
+    console.log("  WARNING: VK files not found. Run 'pnpm compile' and ensure zkeys exist.");
+    console.log(`  Expected: ${PM_VK_JSON}`);
+    console.log(`  Expected: ${TV_VK_JSON}`);
+  } else {
+    const processVk = loadVk(PM_VK_JSON);
+    const tallyVk = loadVk(TV_VK_JSON);
+
+    await (
+      await vkRegistryContract.setVerifyingKeys(
+        STATE_TREE_DEPTH,
+        INT_STATE_TREE_DEPTH,
+        MSG_TREE_DEPTH,
+        VOTE_OPTION_TREE_DEPTH,
+        MSG_BATCH_SIZE,
+        EMode.QV,
+        processVk.asContractParam(),
+        tallyVk.asContractParam()
+      )
+    ).wait();
+    console.log("  VKs registered.");
+  }
+
+  // 3. Deploy MaciRLA
+  console.log("3. Deploying MaciRLA...");
+  const MaciRLA = await ethers.getContractFactory("MaciRLA");
+  const maciRLA = await MaciRLA.deploy(
+    COORDINATOR_STAKE,
+    PROOF_COST_ESTIMATE,
+    await verifierContract.getAddress(),
+    await vkRegistryContract.getAddress()
+  );
+  await maciRLA.waitForDeployment();
+  const maciRlaAddress = await maciRLA.getAddress();
+  console.log(`  MaciRLA: ${maciRlaAddress}`);
+
+  // 4. Deploy a sample Poll
+  console.log("4. Deploying sample Poll...");
+  const coordinatorKeypair = new Keypair();
+  const deployPollTx = await maciContract.deployPoll(
+    POLL_DURATION,
+    {
+      intStateTreeDepth: INT_STATE_TREE_DEPTH,
+      messageTreeSubDepth: MSG_TREE_SUB_DEPTH,
+      messageTreeDepth: MSG_TREE_DEPTH,
+      voteOptionTreeDepth: VOTE_OPTION_TREE_DEPTH,
+    },
+    coordinatorKeypair.pubKey.asContractParam(),
+    await verifierContract.getAddress(),
+    await vkRegistryContract.getAddress(),
+    EMode.QV
+  );
+  await deployPollTx.wait();
+
+  const pollId = (await maciContract.nextPollId()) - 1n;
+  const pollContracts = await maciContract.getPoll(pollId);
+  console.log(`  Poll #${pollId}: ${pollContracts.poll}`);
+
+  // 5. Write addresses to frontend/.env.local
+  console.log("\n5. Writing frontend/.env.local...");
+  const envContent = [
+    `# Auto-generated by deploy-platform.ts`,
+    `# ${new Date().toISOString()}`,
+    `NEXT_PUBLIC_MACI_ADDRESS=${maciAddress}`,
+    `NEXT_PUBLIC_MACI_RLA_ADDRESS=${maciRlaAddress}`,
+    `NEXT_PUBLIC_VERIFIER_ADDRESS=${await verifierContract.getAddress()}`,
+    `NEXT_PUBLIC_VK_REGISTRY_ADDRESS=${await vkRegistryContract.getAddress()}`,
+    `NEXT_PUBLIC_POLL_ADDRESS=${pollContracts.poll}`,
+    `NEXT_PUBLIC_COORDINATOR_PUB_KEY=${coordinatorKeypair.pubKey.serialize()}`,
+  ].join("\n");
+
+  const envPath = path.resolve(__dirname, "../frontend/.env.local");
+  fs.writeFileSync(envPath, envContent + "\n");
+  console.log(`  Written to: ${envPath}`);
+
+  // 6. Write deploy config for coordinator use
+  const deployConfig = {
+    maciAddress,
+    maciRlaAddress,
+    verifierAddress: await verifierContract.getAddress(),
+    vkRegistryAddress: await vkRegistryContract.getAddress(),
+    pollAddress: pollContracts.poll,
+    pollId: pollId.toString(),
+    coordinatorPubKey: coordinatorKeypair.pubKey.serialize(),
+    coordinatorPrivKey: coordinatorKeypair.privKey.serialize(),
+    deployedAt: new Date().toISOString(),
+  };
+
+  const configPath = path.resolve(__dirname, "../deploy-config.json");
+  fs.writeFileSync(configPath, JSON.stringify(deployConfig, null, 2));
+  console.log(`  Deploy config: ${configPath}`);
+
+  // Summary
+  console.log("\n=== Deployment Complete ===");
+  console.log(`  MACI:     ${maciAddress}`);
+  console.log(`  MaciRLA:  ${maciRlaAddress}`);
+  console.log(`  Poll #${pollId}:  ${pollContracts.poll}`);
+  console.log(`\n  Frontend: cd frontend && npm run dev`);
+  console.log(`  Or use:   bash scripts/start-platform.sh`);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

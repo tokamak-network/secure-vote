@@ -2,12 +2,23 @@
   "name": "maci-test",
   "version": "1.0.0",
   "private": true,
-  "description": "MACI 5-vote E2E verification test",
+  "description": "MACI + MaciRLA voting platform with RLA verification",
   "scripts": {
     "compile": "hardhat compile && hardhat build-poseidon",
     "test": "hardhat test",
-    "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' hardhat test test/five-vote-e2e.ts --timeout 300000",
-    "download-zkeys": "bash scripts/download-zkeys.sh"
+    "test:e2e": "NODE_OPTIONS='--max-old-space-size=4096' hardhat test test/five-vote-e2e.ts",
+    "test:bench": "BENCH_NAME=10-vote NODE_OPTIONS='--max-old-space-size=4096 --expose-gc' hardhat test test/benchmark-e2e.ts && BENCH_NAME=30-vote NODE_OPTIONS='--max-old-space-size=4096 --expose-gc' hardhat test test/benchmark-e2e.ts",
+    "test:bench:10": "BENCH_NAME=10-vote NODE_OPTIONS='--max-old-space-size=4096 --expose-gc' hardhat test test/benchmark-e2e.ts",
+    "test:bench:30": "BENCH_NAME=30-vote NODE_OPTIONS='--max-old-space-size=4096 --expose-gc' hardhat test test/benchmark-e2e.ts",
+    "test:rla": "NODE_OPTIONS='--max-old-space-size=4096' hardhat test test/rla-e2e.ts",
+    "compile:circuit": "bash scripts/compile-circuit.sh",
+    "download-zkeys": "bash scripts/download-zkeys.sh",
+    "deploy": "hardhat run scripts/deploy-platform.ts --network localhost",
+    "start": "bash scripts/start-platform.sh",
+    "simulate": "ts-node experiments/simulate.ts",
+    "gas-analysis": "ts-node experiments/gas-analysis.ts",
+    "test:all": "bash scripts/test-all.sh",
+    "test:all:quick": "bash scripts/test-all.sh --quick"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

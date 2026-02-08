@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-carbon-bg text-carbon-text-primary antialiased;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  ::selection {
+    @apply bg-carbon-interactive/30 text-white;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-carbon-layer-2 rounded-none;
+  }
+
+  /* Override RainbowKit button styles */
+  [data-rk] button {
+    @apply !rounded !text-sm;
+  }
+}
+
+@layer components {
+  .carbon-input {
+    @apply w-full px-4 py-3 bg-carbon-layer-1 border-b-2 border-carbon-border
+      text-carbon-text-primary text-sm
+      placeholder:text-carbon-text-disabled
+      focus:outline-none focus:border-carbon-interactive
+      transition-colors;
+  }
+
+  .carbon-btn-primary {
+    @apply px-4 py-2.5 bg-carbon-interactive text-white text-sm font-medium
+      hover:bg-carbon-interactive-hover
+      disabled:bg-carbon-text-disabled disabled:cursor-not-allowed
+      transition-colors;
+  }
+
+  .carbon-btn-ghost {
+    @apply px-4 py-2.5 bg-transparent text-carbon-interactive text-sm font-medium
+      hover:bg-carbon-layer-1
+      disabled:text-carbon-text-disabled disabled:cursor-not-allowed
+      transition-colors;
+  }
+
+  .carbon-btn-danger {
+    @apply px-4 py-2.5 bg-carbon-support-error text-white text-sm font-medium
+      hover:bg-carbon-support-error-light
+      disabled:bg-carbon-text-disabled disabled:cursor-not-allowed
+      transition-colors;
+  }
+
+  .carbon-card {
+    @apply bg-carbon-layer-1 border border-carbon-border-subtle;
+  }
+
+  .carbon-tag {
+    @apply inline-flex items-center px-2 py-0.5 text-2xs font-medium tracking-wide uppercase;
+  }
+}

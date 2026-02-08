@@ -37,16 +37,37 @@ task("build-poseidon", "Generate real Poseidon contract bytecodes").setAction(
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.20",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
+    compilers: [
+      {
+        version: "0.8.20",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
+    overrides: {
+      "contracts/MaciRLA.sol": {
+        version: "0.8.20",
+        settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
     },
   },
   networks: {
     hardhat: {
+      blockGasLimit: 30_000_000,
+      allowUnlimitedContractSize: true,
+    },
+    localhost: {
+      url: "http://127.0.0.1:8545",
       blockGasLimit: 30_000_000,
       allowUnlimitedContractSize: true,
     },

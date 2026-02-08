@@ -1,0 +1,25 @@
+# Dependencies
+frontend/node_modules/
+coordinator/node_modules/
+node_modules/
+
+# Generated proof files
+proofs-*/
+proofs-web/
+
+# Benchmark results
+benchmark-results*.json
+
+# Build artifacts
+frontend/.next/
+frontend/out/
+typechain-types/
+artifacts/
+cache/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store

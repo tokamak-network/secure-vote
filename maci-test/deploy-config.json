@@ -1,1 +1,11 @@
-{}
+{
+  "maciAddress": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+  "maciRlaAddress": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+  "verifierAddress": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  "vkRegistryAddress": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+  "pollAddress": "0x06B1D212B8da92b83AF328De5eef4E211Da02097",
+  "pollId": "0",
+  "coordinatorPubKey": "macipk.ab10e3c1979092667654897fa464a3f00b9bab8b173324b6b5b985c14bb62bec",
+  "coordinatorPrivKey": "macisk.1d2d1f83c377eb86f327e6817a075e3fd746ff0652a1ed35e1787b4b90e22ae7",
+  "deployedAt": "2026-02-08T05:32:59.236Z"
+}
