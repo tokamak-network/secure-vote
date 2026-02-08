@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { usePublicClient } from 'wagmi';
 import Layout from '@/components/Layout';
+import CoordinatorGuard from '@/components/CoordinatorGuard';
 import RlaStatus from '@/components/RlaStatus';
 import Link from 'next/link';
 import { MACI_RLA_ABI, MACI_ABI, POLL_ABI, AuditPhase, PHASE_LABELS } from '@/lib/contracts';
@@ -330,157 +331,159 @@ export default function CoordinatorManage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto">
-        <Link href="/coordinator" className="text-sm text-carbon-text-helper hover:text-carbon-text-secondary transition-colors mb-6 inline-block">
-          &larr; Dashboard
-        </Link>
+      <CoordinatorGuard>
+        <div className="max-w-2xl mx-auto">
+          <Link href="/coordinator" className="text-sm text-carbon-text-helper hover:text-carbon-text-secondary transition-colors mb-6 inline-block">
+            &larr; Dashboard
+          </Link>
 
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-heading font-semibold text-carbon-text-primary">Poll #{id}</h1>
-          <span className={`carbon-tag ${
-            phase === AuditPhase.None ? 'bg-carbon-layer-2 text-carbon-text-helper' :
-            phase === AuditPhase.Finalized ? 'bg-carbon-support-success/20 text-carbon-support-success' :
-            phase === AuditPhase.Rejected ? 'bg-carbon-support-error/20 text-carbon-support-error-light' :
-            'bg-carbon-support-warning/20 text-carbon-support-warning'
-          }`}>
-            {PHASE_LABELS[phase] || 'Not Started'}
-          </span>
-        </div>
-        <p className="text-sm text-carbon-text-helper mb-8">Coordinator management</p>
-
-        {(error || success) && (
-          <div className={`mb-6 px-4 py-3 text-sm border-l-2 ${
-            success
-              ? 'bg-carbon-support-success/10 text-carbon-support-success border-carbon-support-success'
-              : 'bg-carbon-support-error/10 text-carbon-support-error-light border-carbon-support-error'
-          }`}>
-            {success || error}
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-heading font-semibold text-carbon-text-primary">Poll #{id}</h1>
+            <span className={`carbon-tag ${
+              phase === AuditPhase.None ? 'bg-carbon-layer-2 text-carbon-text-helper' :
+              phase === AuditPhase.Finalized ? 'bg-carbon-support-success/20 text-carbon-support-success' :
+              phase === AuditPhase.Rejected ? 'bg-carbon-support-error/20 text-carbon-support-error-light' :
+              'bg-carbon-support-warning/20 text-carbon-support-warning'
+            }`}>
+              {PHASE_LABELS[phase] || 'Not Started'}
+            </span>
           </div>
-        )}
+          <p className="text-sm text-carbon-text-helper mb-8">Coordinator management</p>
 
-        {/* Poll Info */}
-        {pollInfo && (
-          <div className="carbon-card p-5 mb-4">
-            <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Poll Info</h3>
-            <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-              <div>
-                <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Address</div>
-                <div className="text-xs text-carbon-text-primary font-mono text-2xs">
-                  {pollInfo.pollAddress.slice(0, 10)}...{pollInfo.pollAddress.slice(-6)}
+          {(error || success) && (
+            <div className={`mb-6 px-4 py-3 text-sm border-l-2 ${
+              success
+                ? 'bg-carbon-support-success/10 text-carbon-support-success border-carbon-support-success'
+                : 'bg-carbon-support-error/10 text-carbon-support-error-light border-carbon-support-error'
+            }`}>
+              {success || error}
+            </div>
+          )}
+
+          {/* Poll Info */}
+          {pollInfo && (
+            <div className="carbon-card p-5 mb-4">
+              <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Poll Info</h3>
+              <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                <div>
+                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Address</div>
+                  <div className="text-xs text-carbon-text-primary font-mono text-2xs">
+                    {pollInfo.pollAddress.slice(0, 10)}...{pollInfo.pollAddress.slice(-6)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Messages</div>
+                  <div className="text-sm text-carbon-text-primary">{pollInfo.messageCount}</div>
+                </div>
+                <div>
+                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Signups</div>
+                  <div className="text-sm text-carbon-text-primary">{pollInfo.voterCount}</div>
+                </div>
+                <div>
+                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Duration</div>
+                  <div className="text-sm text-carbon-text-primary">{Math.round(pollInfo.duration / 60)}m</div>
                 </div>
               </div>
-              <div>
-                <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Messages</div>
-                <div className="text-sm text-carbon-text-primary">{pollInfo.messageCount}</div>
-              </div>
-              <div>
-                <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Signups</div>
-                <div className="text-sm text-carbon-text-primary">{pollInfo.voterCount}</div>
-              </div>
-              <div>
-                <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Duration</div>
-                <div className="text-sm text-carbon-text-primary">{Math.round(pollInfo.duration / 60)}m</div>
-              </div>
+            </div>
+          )}
+
+          {/* RLA Status */}
+          {audit && phase > AuditPhase.None && (
+            <div className="mb-4">
+              <RlaStatus
+                phase={phase}
+                pmSampleCount={audit.pmSampleCount}
+                tvSampleCount={audit.tvSampleCount}
+                pmProofsVerified={audit.pmProofsVerified}
+                tvProofsVerified={audit.tvProofsVerified}
+                pmBatchCount={audit.pmBatchCount}
+                tvBatchCount={audit.tvBatchCount}
+                yesVotes={audit.yesVotes}
+                noVotes={audit.noVotes}
+                tentativeTimestamp={audit.tentativeTimestamp}
+                challengePeriod={challengePeriod}
+                challenger={audit.challenger}
+                challengeBond={audit.challengeBond}
+                challengeDeadline={audit.challengeDeadline}
+                fullPmProofsVerified={audit.fullPmProofsVerified}
+                fullTvProofsVerified={audit.fullTvProofsVerified}
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="carbon-card p-5 mb-4">
+            <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Actions</h3>
+            <div className="space-y-2">
+              {actions.map((action, i) => (
+                <div
+                  key={action.key}
+                  className={`flex items-center justify-between p-3 transition-colors ${
+                    action.enabled ? 'bg-carbon-layer-hover/50 hover:bg-carbon-layer-hover' : 'opacity-35'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${
+                      action.enabled ? 'bg-carbon-interactive/20 text-carbon-interactive' : 'bg-carbon-layer-2 text-carbon-text-disabled'
+                    }`}>{i + 1}</div>
+                    <div>
+                      <div className="text-sm text-carbon-text-primary font-medium">{action.label}</div>
+                      <div className="text-2xs text-carbon-text-helper mt-0.5">{action.description}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => runAction(action.key)}
+                    disabled={!action.enabled || actionLoading !== null}
+                    className="carbon-btn-primary text-xs px-3 py-1.5 shrink-0"
+                  >
+                    {actionLoading === action.key ? 'Running...' : 'Run'}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
-        )}
 
-        {/* RLA Status */}
-        {audit && phase > AuditPhase.None && (
-          <div className="mb-4">
-            <RlaStatus
-              phase={phase}
-              pmSampleCount={audit.pmSampleCount}
-              tvSampleCount={audit.tvSampleCount}
-              pmProofsVerified={audit.pmProofsVerified}
-              tvProofsVerified={audit.tvProofsVerified}
-              pmBatchCount={audit.pmBatchCount}
-              tvBatchCount={audit.tvBatchCount}
-              yesVotes={audit.yesVotes}
-              noVotes={audit.noVotes}
-              tentativeTimestamp={audit.tentativeTimestamp}
-              challengePeriod={challengePeriod}
-              challenger={audit.challenger}
-              challengeBond={audit.challengeBond}
-              challengeDeadline={audit.challengeDeadline}
-              fullPmProofsVerified={audit.fullPmProofsVerified}
-              fullTvProofsVerified={audit.fullTvProofsVerified}
-            />
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="carbon-card p-5 mb-4">
-          <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Actions</h3>
-          <div className="space-y-2">
-            {actions.map((action, i) => (
-              <div
-                key={action.key}
-                className={`flex items-center justify-between p-3 transition-colors ${
-                  action.enabled ? 'bg-carbon-layer-hover/50 hover:bg-carbon-layer-hover' : 'opacity-35'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${
-                    action.enabled ? 'bg-carbon-interactive/20 text-carbon-interactive' : 'bg-carbon-layer-2 text-carbon-text-disabled'
-                  }`}>{i + 1}</div>
-                  <div>
-                    <div className="text-sm text-carbon-text-primary font-medium">{action.label}</div>
-                    <div className="text-2xs text-carbon-text-helper mt-0.5">{action.description}</div>
+          {/* Challenge Response */}
+          {isChallenged && (
+            <div className="carbon-card !border-carbon-support-error/30 p-5 mb-4">
+              <h3 className="text-xs font-medium text-carbon-support-error-light uppercase tracking-wider mb-4">
+                Challenge Response Required
+              </h3>
+              <div className="flex items-center justify-between p-3 bg-carbon-support-error/5">
+                <div>
+                  <div className="text-sm text-carbon-text-primary font-medium">Respond to Challenge</div>
+                  <div className="text-2xs text-carbon-text-helper mt-0.5">
+                    Generate all remaining proofs. Deadline: {
+                      audit?.challengeDeadline
+                        ? new Date(audit.challengeDeadline * 1000).toLocaleString()
+                        : 'unknown'
+                    }
                   </div>
                 </div>
                 <button
-                  onClick={() => runAction(action.key)}
-                  disabled={!action.enabled || actionLoading !== null}
-                  className="carbon-btn-primary text-xs px-3 py-1.5 shrink-0"
+                  onClick={() => runAction('challenge-respond')}
+                  disabled={actionLoading !== null}
+                  className="carbon-btn-danger text-xs px-3 py-1.5 shrink-0"
                 >
-                  {actionLoading === action.key ? 'Running...' : 'Run'}
+                  {actionLoading === 'challenge-respond' ? 'Running...' : 'Respond'}
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Challenge Response */}
-        {isChallenged && (
-          <div className="carbon-card !border-carbon-support-error/30 p-5 mb-4">
-            <h3 className="text-xs font-medium text-carbon-support-error-light uppercase tracking-wider mb-4">
-              Challenge Response Required
-            </h3>
-            <div className="flex items-center justify-between p-3 bg-carbon-support-error/5">
-              <div>
-                <div className="text-sm text-carbon-text-primary font-medium">Respond to Challenge</div>
-                <div className="text-2xs text-carbon-text-helper mt-0.5">
-                  Generate all remaining proofs. Deadline: {
-                    audit?.challengeDeadline
-                      ? new Date(audit.challengeDeadline * 1000).toLocaleString()
-                      : 'unknown'
-                  }
-                </div>
-              </div>
-              <button
-                onClick={() => runAction('challenge-respond')}
-                disabled={actionLoading !== null}
-                className="carbon-btn-danger text-xs px-3 py-1.5 shrink-0"
-              >
-                {actionLoading === 'challenge-respond' ? 'Running...' : 'Respond'}
-              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Results link */}
-        {phase >= AuditPhase.Committed && (
-          <div className="text-center">
-            <Link
-              href={`/elections/${id}/results`}
-              className="text-sm text-carbon-interactive hover:text-carbon-interactive-hover transition-colors"
-            >
-              View Public Results &rarr;
-            </Link>
-          </div>
-        )}
-      </div>
+          {/* Results link */}
+          {phase >= AuditPhase.Committed && (
+            <div className="text-center">
+              <Link
+                href={`/elections/${id}/results`}
+                className="text-sm text-carbon-interactive hover:text-carbon-interactive-hover transition-colors"
+              >
+                View Public Results &rarr;
+              </Link>
+            </div>
+          )}
+        </div>
+      </CoordinatorGuard>
     </Layout>
   );
 }

@@ -17,6 +17,12 @@ const PROJECT_ROOT = path.resolve(process.cwd(), '..');
  * Returns current extraction status.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cookie = req.headers.cookie || '';
+  const authed = /(?:^|;\s*)coordinator_auth=true(?:;|$)/.test(cookie);
+  if (!authed) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+
   if (req.method === 'GET') {
     if (fs.existsSync(STATUS_FILE)) {
       const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));

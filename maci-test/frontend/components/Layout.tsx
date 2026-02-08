@@ -1,11 +1,37 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
+import { useAccount } from 'wagmi';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { address } = useAccount();
+  const [faucetLoading, setFaucetLoading] = useState(false);
   const isCoordinator = router.pathname.startsWith('/coordinator');
+
+  const handleFaucet = async () => {
+    if (!address) return;
+    setFaucetLoading(true);
+    try {
+      const res = await fetch('/api/faucet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.funded) alert('Sent 1 ETH to your wallet!');
+        else alert('Balance sufficient (already > 0.5 ETH)');
+      } else {
+        alert('Faucet failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('Faucet failed');
+    } finally {
+      setFaucetLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-carbon-bg">
@@ -38,7 +64,18 @@ export default function Layout({ children }: { children: ReactNode }) {
               </Link>
             </nav>
           </div>
-          <ConnectButton showBalance={false} />
+          <div className="flex items-center gap-4">
+            {address && (
+              <button
+                onClick={handleFaucet}
+                disabled={faucetLoading}
+                className="text-xs text-carbon-interactive hover:text-carbon-interactive-hover disabled:opacity-50"
+              >
+                {faucetLoading ? 'Sending...' : 'Get Test ETH'}
+              </button>
+            )}
+            <ConnectButton showBalance={false} />
+          </div>
         </div>
       </header>
       <main className="max-w-[960px] mx-auto px-6 py-8">

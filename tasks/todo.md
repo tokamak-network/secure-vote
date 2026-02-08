@@ -14,6 +14,16 @@
 
 ---
 
+## maci-test: Coordinator minimal auth + local-only deploy-config (2026-02-08)
+- [ ] Add `.gitignore` entries for `maci-test/deploy-config.json`, `maci-test/frontend/.env.local`, `*.log`, and local helper scripts
+- [ ] Untrack `maci-test/deploy-config.json` from git index (keep local file)
+- [ ] Remove login default password fallback; require `COORDINATOR_PASSWORD` env
+- [ ] Protect `pages/api/coordinator/*` routes with the same cookie check (`coordinator_auth=true`)
+- [ ] Verify: pre-login coordinator API returns 401; post-login works; `npm run build` succeeds
+
+### Review
+- [ ] Notes / risks captured
+
 ## 구현 체크리스트
 
 ### Phase 1: 핵심 암호화 (Week 1) ✅

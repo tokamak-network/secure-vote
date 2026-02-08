@@ -29,3 +29,9 @@ maci-test/proofs/
 maci-test/artifacts/
 maci-test/cache/
 maci-test/typechain-types/
+
+# Local-only MACI test config / logs
+maci-test/deploy-config.json
+maci-test/frontend/.env.local
+*.log
+start-wrapper.sh
