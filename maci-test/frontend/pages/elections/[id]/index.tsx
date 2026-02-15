@@ -319,137 +319,162 @@ export default function ElectionDetail() {
     setTimeout(() => setSuccess(null), 8000);
   };
 
-  const stepStatus = (done: boolean) =>
-    done
-      ? 'bg-carbon-support-success/20 text-carbon-support-success'
-      : 'bg-carbon-layer-2 text-carbon-text-disabled';
+  const StepIcon = ({ step, done, active }: { step: number; done: boolean; active: boolean }) => (
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+      done ? 'bg-sv-emerald/20 text-sv-emerald border border-sv-emerald/40' :
+      active ? 'bg-sv-accent/20 text-sv-accent border border-sv-accent/40' :
+      'bg-sv-surface-2 text-sv-text-disabled border border-sv-border-subtle'
+    }`}>
+      {done ? (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      ) : step}
+    </div>
+  );
 
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        <Link href="/" className="text-sm text-carbon-text-helper hover:text-carbon-text-secondary transition-colors mb-6 inline-block">
-          &larr; Elections
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-sv-text-muted hover:text-sv-accent transition-colors mb-8">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Elections
         </Link>
 
-        <h1 className="text-heading font-semibold text-carbon-text-primary mb-1">Election #{id}</h1>
-        <p className="text-sm text-carbon-text-helper mb-8">
+        <h1 className="text-heading font-bold text-sv-text-primary mb-1">Election #{id}</h1>
+        <p className="text-sm text-sv-text-muted mb-10">
           Cast your vote privately using MACI encryption.
         </p>
 
         {(error || success) && (
-          <div className={`mb-6 px-4 py-3 text-sm border-l-2 ${
+          <div className={`mb-8 px-5 py-4 text-sm rounded-lg border flex items-start gap-3 ${
             success
-              ? 'bg-carbon-support-success/10 text-carbon-support-success border-carbon-support-success'
-              : 'bg-carbon-support-error/10 text-carbon-support-error-light border-carbon-support-error'
+              ? 'bg-sv-emerald/10 text-sv-emerald border-sv-emerald/20'
+              : 'bg-sv-error/10 text-sv-error-light border-sv-error/20'
           }`}>
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              {success ? (
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              ) : (
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              )}
+            </svg>
             {success || error}
           </div>
         )}
 
         {/* Step 1: Connect Wallet */}
-        <div className="carbon-card p-5 mb-3">
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${stepStatus(isConnected)}`}>1</div>
-            <h3 className="text-sm font-medium text-carbon-text-primary">Connect Wallet</h3>
-          </div>
-          <p className="text-xs text-carbon-text-helper ml-8">
-            {isConnected
-              ? <span className="font-mono text-carbon-text-secondary">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-              : 'Use the Connect button in the header'}
-          </p>
-        </div>
-
-        {/* Step 2: MACI Signup */}
-        <div className="carbon-card p-5 mb-3">
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${stepStatus(isSignedUp)}`}>2</div>
-            <h3 className="text-sm font-medium text-carbon-text-primary">MACI Signup</h3>
-          </div>
-          {isSignedUp ? (
-            <div className="ml-8">
-              <p className="text-xs text-carbon-support-success mb-2">
-                Signed up (state: {keyData?.stateIndex}, msgs: {(keyData?.nonce || 1) - 1})
-              </p>
-              <button
-                onClick={handleKeyChange}
-                disabled={keyChangeLoading}
-                className="carbon-btn-ghost text-xs px-3 py-1.5"
-              >
-                {keyChangeLoading ? 'Changing...' : 'Change Key'}
-              </button>
-              <p className="text-xs text-carbon-text-disabled mt-1">
-                If coerced, change your key to invalidate votes the coercer observed.
-              </p>
+        <div className="relative">
+          <div className="sv-card p-5 mb-2">
+            <div className="flex items-center gap-4 mb-2">
+              <StepIcon step={1} done={isConnected} active={false} />
+              <h3 className="text-sm font-semibold text-sv-text-primary">Connect Wallet</h3>
             </div>
-          ) : (
-            <div className="ml-8">
-              <p className="text-xs text-carbon-text-helper mb-3">
-                Generate a MACI keypair for private voting. Stored locally in your browser.
-              </p>
-              <button
-                onClick={handleSignup}
-                disabled={!isConnected || signupLoading}
-                className="carbon-btn-primary text-xs"
-              >
-                {signupLoading ? 'Signing up...' : 'Generate Key & Sign Up'}
-              </button>
-            </div>
-          )}
-        </div>
+            <p className="text-xs text-sv-text-muted ml-12">
+              {isConnected
+                ? <span className="font-mono text-sv-text-secondary">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                : 'Use the Connect button in the header'}
+            </p>
+          </div>
 
-        {/* Step 3: Vote */}
-        <div className="carbon-card p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${
-              hasVoted ? stepStatus(true) : selectedVote ? 'bg-carbon-interactive/20 text-carbon-interactive' : stepStatus(false)
-            }`}>3</div>
-            <h3 className="text-sm font-medium text-carbon-text-primary">
-              {hasVoted ? 'Change Vote' : 'Cast Vote'}
-            </h3>
-            {hasVoted && lastVoteChoice && (
-              <span className="carbon-tag bg-carbon-layer-2 text-carbon-text-helper">
-                Current: {lastVoteChoice}
-              </span>
+          {/* Connector line */}
+          <div className="absolute left-[2.1rem] top-[4.5rem] w-px h-4 bg-sv-border-subtle" />
+
+          {/* Step 2: MACI Signup */}
+          <div className="sv-card p-5 mb-2 mt-2">
+            <div className="flex items-center gap-4 mb-2">
+              <StepIcon step={2} done={isSignedUp} active={!isSignedUp && isConnected} />
+              <h3 className="text-sm font-semibold text-sv-text-primary">MACI Signup</h3>
+            </div>
+            {isSignedUp ? (
+              <div className="ml-12">
+                <p className="text-xs text-sv-emerald mb-3">
+                  Signed up (state: {keyData?.stateIndex}, msgs: {(keyData?.nonce || 1) - 1})
+                </p>
+                <button
+                  onClick={handleKeyChange}
+                  disabled={keyChangeLoading}
+                  className="sv-btn-ghost text-xs px-3 py-1.5"
+                >
+                  {keyChangeLoading ? 'Changing...' : 'Change Key'}
+                </button>
+                <p className="text-xs text-sv-text-disabled mt-2">
+                  If coerced, change your key to invalidate votes the coercer observed.
+                </p>
+              </div>
+            ) : (
+              <div className="ml-12">
+                <p className="text-xs text-sv-text-muted mb-4">
+                  Generate a MACI keypair for private voting. Stored locally in your browser.
+                </p>
+                <button
+                  onClick={handleSignup}
+                  disabled={!isConnected || signupLoading}
+                  className="sv-btn-primary text-xs"
+                >
+                  {signupLoading ? 'Signing up...' : 'Generate Key & Sign Up'}
+                </button>
+              </div>
             )}
           </div>
-          {hasVoted && (
-            <p className="text-xs text-carbon-text-disabled ml-8 mb-3">
-              You can re-vote anytime before tallying. Only the last valid vote counts.
-            </p>
-          )}
-          <div className="ml-8">
-            <div className="flex gap-3 mb-4">
-              <button
-                onClick={() => setSelectedVote('yes')}
-                className={`flex-1 py-3 text-sm font-medium transition-colors border ${
-                  selectedVote === 'yes'
-                    ? 'bg-carbon-support-success/15 text-carbon-support-success border-carbon-support-success/40'
-                    : 'bg-carbon-layer-2 text-carbon-text-helper border-carbon-border hover:border-carbon-text-disabled'
-                }`}
-              >
-                Yes / For
-              </button>
-              <button
-                onClick={() => setSelectedVote('no')}
-                className={`flex-1 py-3 text-sm font-medium transition-colors border ${
-                  selectedVote === 'no'
-                    ? 'bg-carbon-support-error/15 text-carbon-support-error-light border-carbon-support-error/40'
-                    : 'bg-carbon-layer-2 text-carbon-text-helper border-carbon-border hover:border-carbon-text-disabled'
-                }`}
-              >
-                No / Against
-              </button>
+
+          {/* Connector line */}
+          <div className="absolute left-[2.1rem] bottom-[calc(100%-10.5rem)] w-px h-4 bg-sv-border-subtle" style={{ display: 'none' }} />
+
+          {/* Step 3: Vote */}
+          <div className="sv-card p-5 mt-2">
+            <div className="flex items-center gap-4 mb-2">
+              <StepIcon step={3} done={hasVoted} active={!hasVoted && isSignedUp} />
+              <h3 className="text-sm font-semibold text-sv-text-primary">
+                {hasVoted ? 'Change Vote' : 'Cast Vote'}
+              </h3>
+              {hasVoted && lastVoteChoice && (
+                <span className="sv-tag bg-sv-surface-2 text-sv-text-muted">
+                  Current: {lastVoteChoice}
+                </span>
+              )}
             </div>
-            <button
-              onClick={handleVote}
-              disabled={!selectedVote || !isSignedUp || voteLoading}
-              className="carbon-btn-primary w-full"
-            >
-              {voteLoading ? 'Encrypting & Submitting...' : hasVoted ? 'Submit Re-Vote' : 'Submit Encrypted Vote'}
-            </button>
-            <p className="text-xs text-carbon-text-disabled mt-2">
-              Encrypted with MACI. Submitted via relayer, falls back to MetaMask.
-            </p>
+            {hasVoted && (
+              <p className="text-xs text-sv-text-disabled ml-12 mb-3">
+                You can re-vote anytime before tallying. Only the last valid vote counts.
+              </p>
+            )}
+            <div className="ml-12">
+              <div className="flex gap-3 mb-4">
+                <button
+                  onClick={() => setSelectedVote('yes')}
+                  className={`flex-1 py-4 text-sm font-semibold rounded-lg transition-all border ${
+                    selectedVote === 'yes'
+                      ? 'bg-sv-emerald/15 text-sv-emerald border-sv-emerald/40 shadow-glow-emerald'
+                      : 'bg-sv-surface-2 text-sv-text-muted border-sv-border-subtle hover:border-sv-border hover:text-sv-text-secondary'
+                  }`}
+                >
+                  Yes / For
+                </button>
+                <button
+                  onClick={() => setSelectedVote('no')}
+                  className={`flex-1 py-4 text-sm font-semibold rounded-lg transition-all border ${
+                    selectedVote === 'no'
+                      ? 'bg-sv-error/15 text-sv-error-light border-sv-error/40 shadow-glow-error'
+                      : 'bg-sv-surface-2 text-sv-text-muted border-sv-border-subtle hover:border-sv-border hover:text-sv-text-secondary'
+                  }`}
+                >
+                  No / Against
+                </button>
+              </div>
+              <button
+                onClick={handleVote}
+                disabled={!selectedVote || !isSignedUp || voteLoading}
+                className="sv-btn-primary w-full"
+              >
+                {voteLoading ? 'Encrypting & Submitting...' : hasVoted ? 'Submit Re-Vote' : 'Submit Encrypted Vote'}
+              </button>
+              <p className="text-xs text-sv-text-disabled mt-3">
+                Encrypted with MACI. Submitted via relayer, falls back to MetaMask.
+              </p>
+            </div>
           </div>
         </div>
       </div>

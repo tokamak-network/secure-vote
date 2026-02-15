@@ -157,31 +157,63 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-heading font-semibold text-carbon-text-primary">Elections</h1>
-          <p className="text-sm text-carbon-text-helper mt-1">MACI-encrypted voting with risk-limiting audits</p>
+      {/* Hero section */}
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-3">
+          <svg className="w-8 h-8 text-sv-accent" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.4 9.36-7 10.5-3.6-1.14-7-5.67-7-10.5V6.3l7-3.12z"/>
+            <path d="M10 15.5l-3.5-3.5 1.41-1.41L10 12.67l5.59-5.59L17 8.5l-7 7z"/>
+          </svg>
+          <h1 className="text-display font-bold text-sv-text-primary">Elections</h1>
         </div>
-        <Link href="/elections/create" className="carbon-btn-primary">
+        <p className="text-base text-sv-text-muted max-w-lg">
+          MACI-encrypted voting with zero-knowledge proofs and risk-limiting audits.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-sm text-sv-text-muted">
+          {!loading && elections.length > 0 && `${elections.length} election${elections.length !== 1 ? 's' : ''}`}
+        </div>
+        <Link href="/elections/create" className="sv-btn-primary flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
           New Election
         </Link>
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-carbon-support-error/10 text-carbon-support-error-light text-sm border-l-2 border-carbon-support-error">
+        <div className="mb-6 px-5 py-4 bg-sv-error/10 text-sv-error-light text-sm border border-sv-error/20 rounded-lg flex items-start gap-3">
+          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="py-20 text-center text-carbon-text-disabled text-sm">Loading elections...</div>
+        <div className="py-24 text-center">
+          <div className="inline-flex items-center gap-3 text-sv-text-muted text-sm">
+            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Loading elections...
+          </div>
+        </div>
       ) : elections.length === 0 ? (
-        <div className="py-20 text-center">
-          <p className="text-carbon-text-helper text-sm mb-1">No elections yet</p>
-          <p className="text-carbon-text-disabled text-xs">Deploy the platform and create an election to get started.</p>
+        <div className="py-24 text-center">
+          <svg className="w-16 h-16 text-sv-text-disabled mx-auto mb-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.4 9.36-7 10.5-3.6-1.14-7-5.67-7-10.5V6.3l7-3.12z"/>
+          </svg>
+          <p className="text-sv-text-muted text-sm mb-2">No elections yet</p>
+          <p className="text-sv-text-disabled text-xs">
+            Deploy the platform and create an election to get started.
+          </p>
         </div>
       ) : (
-        <div className="carbon-card overflow-hidden">
+        <div className="space-y-0">
           {elections.map((election) => (
             <ElectionCard key={election.id} election={election} />
           ))}

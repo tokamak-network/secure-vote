@@ -42,18 +42,21 @@ export default function CreateElection() {
   return (
     <Layout>
       <div className="max-w-md mx-auto">
-        <h1 className="text-heading font-semibold text-carbon-text-primary mb-1">Create Election</h1>
-        <p className="text-sm text-carbon-text-helper mb-8">Deploy a new MACI poll for encrypted voting.</p>
+        <h1 className="text-heading font-bold text-sv-text-primary mb-1">Create Election</h1>
+        <p className="text-sm text-sv-text-muted mb-8">Deploy a new MACI poll for encrypted voting.</p>
 
         {error && (
-          <div className="mb-6 px-4 py-3 bg-carbon-support-error/10 text-carbon-support-error-light text-sm border-l-2 border-carbon-support-error">
+          <div className="mb-6 px-5 py-4 bg-sv-error/10 text-sv-error-light text-sm border border-sv-error/20 rounded-lg flex items-start gap-3">
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
             {error}
           </div>
         )}
 
         <form onSubmit={handleCreate} className="space-y-6">
           <div>
-            <label className="block text-xs text-carbon-text-helper uppercase tracking-wider mb-2">
+            <label className="sv-section-label block mb-2">
               Election Name
             </label>
             <input
@@ -61,12 +64,12 @@ export default function CreateElection() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., 2024 Student Council Election"
-              className="carbon-input"
+              className="sv-input"
             />
           </div>
 
           <div>
-            <label className="block text-xs text-carbon-text-helper uppercase tracking-wider mb-2">
+            <label className="sv-section-label block mb-2">
               Category
             </label>
             <input
@@ -74,21 +77,21 @@ export default function CreateElection() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g., Humanities / Philosophy"
-              className="carbon-input"
+              className="sv-input"
             />
           </div>
 
           <div>
-            <label className="block text-xs text-carbon-text-helper uppercase tracking-wider mb-2">
+            <label className="sv-section-label block mb-2">
               Voting Duration (seconds)
             </label>
             <input
               type="number"
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="carbon-input"
+              className="sv-input"
             />
-            <p className="text-xs text-carbon-text-disabled mt-2">
+            <p className="text-xs text-sv-text-disabled mt-2">
               Default: 3600 (1 hour). Use shorter durations for testing.
             </p>
           </div>
@@ -96,7 +99,7 @@ export default function CreateElection() {
           <button
             type="submit"
             disabled={loading || !name.trim()}
-            className="carbon-btn-primary w-full"
+            className="sv-btn-primary w-full"
           >
             {loading ? 'Creating...' : 'Create Election'}
           </button>

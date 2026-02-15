@@ -21,7 +21,7 @@ export default function CoordinatorGuard({ children }: { children: React.ReactNo
 
   if (!authed) {
     return (
-      <div className="flex h-screen items-center justify-center bg-carbon-bg text-carbon-text-secondary">
+      <div className="flex h-screen items-center justify-center text-sv-text-secondary">
         <div className="animate-pulse">Verifying access...</div>
       </div>
     );

@@ -273,7 +273,15 @@ export default function CoordinatorManage() {
   if (loading) {
     return (
       <Layout>
-        <div className="py-20 text-center text-carbon-text-disabled text-sm">Loading...</div>
+        <div className="py-24 text-center">
+          <div className="inline-flex items-center gap-3 text-sv-text-muted text-sm">
+            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Loading...
+          </div>
+        </div>
       </Layout>
     );
   }
@@ -333,55 +341,71 @@ export default function CoordinatorManage() {
     <Layout>
       <CoordinatorGuard>
         <div className="max-w-2xl mx-auto">
-          <Link href="/coordinator" className="text-sm text-carbon-text-helper hover:text-carbon-text-secondary transition-colors mb-6 inline-block">
-            &larr; Dashboard
+          <Link href="/coordinator" className="inline-flex items-center gap-1.5 text-sm text-sv-text-muted hover:text-sv-accent transition-colors mb-8">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Dashboard
           </Link>
 
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-heading font-semibold text-carbon-text-primary">Poll #{id}</h1>
-            <span className={`carbon-tag ${
-              phase === AuditPhase.None ? 'bg-carbon-layer-2 text-carbon-text-helper' :
-              phase === AuditPhase.Finalized ? 'bg-carbon-support-success/20 text-carbon-support-success' :
-              phase === AuditPhase.Rejected ? 'bg-carbon-support-error/20 text-carbon-support-error-light' :
-              'bg-carbon-support-warning/20 text-carbon-support-warning'
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-heading font-bold text-sv-text-primary">Poll #{id}</h1>
+            <span className={`sv-tag ${
+              phase === AuditPhase.None ? 'bg-sv-surface-2 text-sv-text-muted' :
+              phase === AuditPhase.Finalized ? 'bg-sv-emerald/15 text-sv-emerald' :
+              phase === AuditPhase.Rejected ? 'bg-sv-error/15 text-sv-error-light' :
+              'bg-sv-warning/15 text-sv-warning'
             }`}>
+              <span className={`sv-badge-dot ${
+                phase === AuditPhase.None ? 'bg-sv-text-disabled' :
+                phase === AuditPhase.Finalized ? 'bg-sv-emerald' :
+                phase === AuditPhase.Rejected ? 'bg-sv-error' :
+                'bg-sv-warning'
+              }`} />
               {PHASE_LABELS[phase] || 'Not Started'}
             </span>
           </div>
-          <p className="text-sm text-carbon-text-helper mb-8">Coordinator management</p>
+          <p className="text-sm text-sv-text-muted mb-8">Coordinator management</p>
 
           {(error || success) && (
-            <div className={`mb-6 px-4 py-3 text-sm border-l-2 ${
+            <div className={`mb-6 px-5 py-4 text-sm rounded-lg border flex items-start gap-3 ${
               success
-                ? 'bg-carbon-support-success/10 text-carbon-support-success border-carbon-support-success'
-                : 'bg-carbon-support-error/10 text-carbon-support-error-light border-carbon-support-error'
+                ? 'bg-sv-emerald/10 text-sv-emerald border-sv-emerald/20'
+                : 'bg-sv-error/10 text-sv-error-light border-sv-error/20'
             }`}>
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                {success ? (
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                ) : (
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                )}
+              </svg>
               {success || error}
             </div>
           )}
 
           {/* Poll Info */}
           {pollInfo && (
-            <div className="carbon-card p-5 mb-4">
-              <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Poll Info</h3>
-              <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+            <div className="sv-card p-6 mb-5">
+              <h3 className="sv-section-label mb-5">Poll Info</h3>
+              <div className="grid grid-cols-4 gap-6">
                 <div>
-                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Address</div>
-                  <div className="text-xs text-carbon-text-primary font-mono text-2xs">
+                  <div className="sv-stat-label">Address</div>
+                  <div className="text-xs text-sv-text-primary font-mono text-2xs mt-1">
                     {pollInfo.pollAddress.slice(0, 10)}...{pollInfo.pollAddress.slice(-6)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Messages</div>
-                  <div className="text-sm text-carbon-text-primary">{pollInfo.messageCount}</div>
+                  <div className="sv-stat-label">Messages</div>
+                  <div className="text-lg font-bold text-sv-text-primary mt-1">{pollInfo.messageCount}</div>
                 </div>
                 <div>
-                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Signups</div>
-                  <div className="text-sm text-carbon-text-primary">{pollInfo.voterCount}</div>
+                  <div className="sv-stat-label">Signups</div>
+                  <div className="text-lg font-bold text-sv-text-primary mt-1">{pollInfo.voterCount}</div>
                 </div>
                 <div>
-                  <div className="text-2xs text-carbon-text-helper uppercase tracking-wider mb-0.5">Duration</div>
-                  <div className="text-sm text-carbon-text-primary">{Math.round(pollInfo.duration / 60)}m</div>
+                  <div className="sv-stat-label">Duration</div>
+                  <div className="text-lg font-bold text-sv-text-primary mt-1">{Math.round(pollInfo.duration / 60)}m</div>
                 </div>
               </div>
             </div>
@@ -389,7 +413,7 @@ export default function CoordinatorManage() {
 
           {/* RLA Status */}
           {audit && phase > AuditPhase.None && (
-            <div className="mb-4">
+            <div className="mb-5">
               <RlaStatus
                 phase={phase}
                 pmSampleCount={audit.pmSampleCount}
@@ -412,29 +436,29 @@ export default function CoordinatorManage() {
           )}
 
           {/* Actions */}
-          <div className="carbon-card p-5 mb-4">
-            <h3 className="text-xs font-medium text-carbon-text-helper uppercase tracking-wider mb-4">Actions</h3>
+          <div className="sv-card p-6 mb-5">
+            <h3 className="sv-section-label mb-5">Actions</h3>
             <div className="space-y-2">
               {actions.map((action, i) => (
                 <div
                   key={action.key}
-                  className={`flex items-center justify-between p-3 transition-colors ${
-                    action.enabled ? 'bg-carbon-layer-hover/50 hover:bg-carbon-layer-hover' : 'opacity-35'
+                  className={`flex items-center justify-between p-4 rounded-lg transition-all ${
+                    action.enabled ? 'bg-sv-surface-hover/50 hover:bg-sv-surface-hover' : 'opacity-35'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 flex items-center justify-center text-2xs font-medium ${
-                      action.enabled ? 'bg-carbon-interactive/20 text-carbon-interactive' : 'bg-carbon-layer-2 text-carbon-text-disabled'
+                  <div className="flex items-center gap-4">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-2xs font-bold ${
+                      action.enabled ? 'bg-sv-accent/20 text-sv-accent border border-sv-accent/40' : 'bg-sv-surface-2 text-sv-text-disabled border border-sv-border-subtle'
                     }`}>{i + 1}</div>
                     <div>
-                      <div className="text-sm text-carbon-text-primary font-medium">{action.label}</div>
-                      <div className="text-2xs text-carbon-text-helper mt-0.5">{action.description}</div>
+                      <div className="text-sm text-sv-text-primary font-medium">{action.label}</div>
+                      <div className="text-2xs text-sv-text-muted mt-0.5">{action.description}</div>
                     </div>
                   </div>
                   <button
                     onClick={() => runAction(action.key)}
                     disabled={!action.enabled || actionLoading !== null}
-                    className="carbon-btn-primary text-xs px-3 py-1.5 shrink-0"
+                    className="sv-btn-primary text-xs px-4 py-2 shrink-0"
                   >
                     {actionLoading === action.key ? 'Running...' : 'Run'}
                   </button>
@@ -445,14 +469,19 @@ export default function CoordinatorManage() {
 
           {/* Challenge Response */}
           {isChallenged && (
-            <div className="carbon-card !border-carbon-support-error/30 p-5 mb-4">
-              <h3 className="text-xs font-medium text-carbon-support-error-light uppercase tracking-wider mb-4">
-                Challenge Response Required
-              </h3>
-              <div className="flex items-center justify-between p-3 bg-carbon-support-error/5">
+            <div className="sv-card border-sv-error/30 shadow-glow-error p-6 mb-5">
+              <div className="flex items-center gap-2 mb-4">
+                <svg className="w-4 h-4 text-sv-error-light" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <h3 className="text-sm font-semibold text-sv-error-light uppercase tracking-wider">
+                  Challenge Response Required
+                </h3>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-sv-error/5 rounded-lg">
                 <div>
-                  <div className="text-sm text-carbon-text-primary font-medium">Respond to Challenge</div>
-                  <div className="text-2xs text-carbon-text-helper mt-0.5">
+                  <div className="text-sm text-sv-text-primary font-medium">Respond to Challenge</div>
+                  <div className="text-2xs text-sv-text-muted mt-0.5">
                     Generate all remaining proofs. Deadline: {
                       audit?.challengeDeadline
                         ? new Date(audit.challengeDeadline * 1000).toLocaleString()
@@ -463,7 +492,7 @@ export default function CoordinatorManage() {
                 <button
                   onClick={() => runAction('challenge-respond')}
                   disabled={actionLoading !== null}
-                  className="carbon-btn-danger text-xs px-3 py-1.5 shrink-0"
+                  className="sv-btn-danger text-xs px-4 py-2 shrink-0"
                 >
                   {actionLoading === 'challenge-respond' ? 'Running...' : 'Respond'}
                 </button>
@@ -476,7 +505,7 @@ export default function CoordinatorManage() {
             <div className="text-center">
               <Link
                 href={`/elections/${id}/results`}
-                className="text-sm text-carbon-interactive hover:text-carbon-interactive-hover transition-colors"
+                className="text-sm text-sv-accent hover:text-sv-accent-hover transition-colors"
               >
                 View Public Results &rarr;
               </Link>

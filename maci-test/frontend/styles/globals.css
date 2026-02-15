@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,66 +6,105 @@
 
 @layer base {
   body {
-    @apply bg-carbon-bg text-carbon-text-primary antialiased;
+    @apply bg-sv-bg text-sv-text-primary antialiased;
+    background-image: linear-gradient(180deg, #0e0e18 0%, #0a0a0f 50%);
+    background-attachment: fixed;
     font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   }
 
   ::selection {
-    @apply bg-carbon-interactive/30 text-white;
+    @apply bg-sv-accent/30 text-white;
   }
 
   /* Scrollbar */
   ::-webkit-scrollbar {
-    @apply w-1;
+    @apply w-1.5;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    @apply bg-sv-bg;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-carbon-layer-2 rounded-none;
+    @apply bg-sv-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-sv-text-disabled;
   }
 
   /* Override RainbowKit button styles */
   [data-rk] button {
-    @apply !rounded !text-sm;
+    @apply !rounded-md !text-sm;
   }
 }
 
 @layer components {
-  .carbon-input {
-    @apply w-full px-4 py-3 bg-carbon-layer-1 border-b-2 border-carbon-border
-      text-carbon-text-primary text-sm
-      placeholder:text-carbon-text-disabled
-      focus:outline-none focus:border-carbon-interactive
-      transition-colors;
+  .sv-card {
+    @apply bg-sv-surface border border-sv-border-subtle rounded-lg
+      transition-all duration-200;
   }
 
-  .carbon-btn-primary {
-    @apply px-4 py-2.5 bg-carbon-interactive text-white text-sm font-medium
-      hover:bg-carbon-interactive-hover
-      disabled:bg-carbon-text-disabled disabled:cursor-not-allowed
-      transition-colors;
+  .sv-card-hover {
+    @apply sv-card hover:border-sv-border hover:shadow-glow-sm;
   }
 
-  .carbon-btn-ghost {
-    @apply px-4 py-2.5 bg-transparent text-carbon-interactive text-sm font-medium
-      hover:bg-carbon-layer-1
-      disabled:text-carbon-text-disabled disabled:cursor-not-allowed
-      transition-colors;
+  .sv-card-glow {
+    @apply sv-card border-sv-accent/20 shadow-glow-sm;
   }
 
-  .carbon-btn-danger {
-    @apply px-4 py-2.5 bg-carbon-support-error text-white text-sm font-medium
-      hover:bg-carbon-support-error-light
-      disabled:bg-carbon-text-disabled disabled:cursor-not-allowed
-      transition-colors;
+  .sv-input {
+    @apply w-full px-4 py-3 bg-sv-surface border border-sv-border-subtle rounded-md
+      text-sv-text-primary text-sm
+      placeholder:text-sv-text-disabled
+      focus:outline-none focus:border-sv-accent focus:shadow-glow-sm
+      transition-all;
   }
 
-  .carbon-card {
-    @apply bg-carbon-layer-1 border border-carbon-border-subtle;
+  .sv-btn-primary {
+    @apply px-5 py-2.5 bg-sv-accent text-white text-sm font-semibold rounded-md
+      hover:bg-sv-accent-hover hover:shadow-glow
+      active:scale-[0.98]
+      disabled:bg-sv-text-disabled disabled:cursor-not-allowed disabled:shadow-none
+      transition-all duration-200;
   }
 
-  .carbon-tag {
-    @apply inline-flex items-center px-2 py-0.5 text-2xs font-medium tracking-wide uppercase;
+  .sv-btn-ghost {
+    @apply px-4 py-2.5 bg-transparent text-sv-accent text-sm font-medium rounded-md
+      hover:bg-sv-accent/10
+      disabled:text-sv-text-disabled disabled:cursor-not-allowed
+      transition-all;
+  }
+
+  .sv-btn-danger {
+    @apply px-4 py-2.5 bg-sv-error text-white text-sm font-semibold rounded-md
+      hover:bg-sv-error-light hover:shadow-glow-error
+      disabled:bg-sv-text-disabled disabled:cursor-not-allowed disabled:shadow-none
+      transition-all duration-200;
+  }
+
+  .sv-btn-warning {
+    @apply px-4 py-2.5 bg-sv-warning text-sv-bg text-sm font-semibold rounded-md
+      hover:brightness-110 hover:shadow-glow-warning
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+      transition-all duration-200;
+  }
+
+  .sv-tag {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium
+      tracking-wide uppercase rounded-full;
+  }
+
+  .sv-badge-dot {
+    @apply w-1.5 h-1.5 rounded-full;
+  }
+
+  .sv-section-label {
+    @apply text-xs font-medium text-sv-text-muted uppercase tracking-wider;
+  }
+
+  .sv-stat-value {
+    @apply text-xl font-bold text-sv-text-primary;
+  }
+
+  .sv-stat-label {
+    @apply text-2xs text-sv-text-muted uppercase tracking-wider mt-0.5;
   }
 }
