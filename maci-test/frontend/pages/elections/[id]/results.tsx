@@ -4,7 +4,7 @@ import { usePublicClient, useAccount, useWalletClient } from 'wagmi';
 import Layout from '@/components/Layout';
 import RlaStatus from '@/components/RlaStatus';
 import Link from 'next/link';
-import { MACI_RLA_ABI, AuditPhase } from '@/lib/contracts';
+import { MACI_RLA_ABI, MACI_ABI, AuditPhase } from '@/lib/contracts';
 
 interface AuditData {
   phase: number;
@@ -33,6 +33,7 @@ export default function ElectionResults() {
   const { address: userAddress } = useAccount();
   const { data: walletClientData } = useWalletClient();
   const [audit, setAudit] = useState<AuditData | null>(null);
+  const [auditId, setAuditId] = useState<bigint | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -46,9 +47,10 @@ export default function ElectionResults() {
 
   const loadAudit = async () => {
     if (!publicClient || id === undefined) return;
+    const maciAddress = process.env.NEXT_PUBLIC_MACI_ADDRESS as `0x${string}` | undefined;
     const maciRlaAddress = process.env.NEXT_PUBLIC_MACI_RLA_ADDRESS as `0x${string}` | undefined;
-    if (!maciRlaAddress) {
-      setError('MaciRLA address not configured');
+    if (!maciRlaAddress || !maciAddress) {
+      setError('Contract addresses not configured');
       setLoading(false);
       return;
     }
@@ -56,20 +58,53 @@ export default function ElectionResults() {
     try {
       setLoading(true);
 
-      const period = await publicClient.readContract({
-        address: maciRlaAddress,
-        abi: MACI_RLA_ABI,
-        functionName: 'CHALLENGE_PERIOD',
-      } as any) as bigint;
-      setChallengePeriod(Number(period));
-
-      const result = await publicClient.readContract({
-        address: maciRlaAddress,
-        abi: MACI_RLA_ABI,
-        functionName: 'pollAudits',
+      // Step 1: Resolve MACI poll ID → poll address → RLA audit ID
+      const pollInfo = await publicClient.readContract({
+        address: maciAddress,
+        abi: MACI_ABI,
+        functionName: 'getPoll',
         args: [BigInt(id as string)],
-      } as any) as any;
+      } as any) as [string, string, string];
+      const pollAddress = pollInfo[0] as `0x${string}`;
 
+      const resolvedAuditId = await publicClient.readContract({
+        address: maciRlaAddress,
+        abi: MACI_RLA_ABI,
+        functionName: 'pollToAuditId',
+        args: [pollAddress],
+      } as any) as bigint;
+
+      if (!resolvedAuditId || resolvedAuditId === 0n) {
+        setError(`No audit found for election #${id}`);
+        setLoading(false);
+        return;
+      }
+      setAuditId(resolvedAuditId);
+
+      // Step 2: Fetch audit data using the resolved audit ID
+      const [period, result, bondResult] = await Promise.all([
+        publicClient.readContract({
+          address: maciRlaAddress,
+          abi: MACI_RLA_ABI,
+          functionName: 'CHALLENGE_PERIOD',
+        } as any) as Promise<bigint>,
+        publicClient.readContract({
+          address: maciRlaAddress,
+          abi: MACI_RLA_ABI,
+          functionName: 'pollAudits',
+          args: [resolvedAuditId],
+        } as any) as Promise<any>,
+        publicClient.readContract({
+          address: maciRlaAddress,
+          abi: MACI_RLA_ABI,
+          functionName: 'getChallengeBondAmount',
+          args: [resolvedAuditId],
+        } as any).catch(() => 0n) as Promise<bigint>,
+      ]);
+
+      // Update all state together to avoid hydration issues
+      setChallengePeriod(Number(period));
+      setChallengeBondRequired(bondResult);
       setAudit({
         coordinator: result[0],
         stakeAmount: result[2],
@@ -89,16 +124,6 @@ export default function ElectionResults() {
         fullTvProofsVerified: Number(result[21]),
         phase: Number(result[22]),
       });
-
-      try {
-        const bond = await publicClient.readContract({
-          address: maciRlaAddress,
-          abi: MACI_RLA_ABI,
-          functionName: 'getChallengeBondAmount',
-          args: [BigInt(id as string)],
-        } as any) as bigint;
-        setChallengeBondRequired(bond);
-      } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load audit data');
     } finally {
@@ -107,7 +132,7 @@ export default function ElectionResults() {
   };
 
   const handleChallenge = async () => {
-    if (!walletClientData || !publicClient) return;
+    if (!walletClientData || !publicClient || !auditId) return;
     const maciRlaAddress = process.env.NEXT_PUBLIC_MACI_RLA_ADDRESS as `0x${string}`;
     if (!maciRlaAddress) return;
 
@@ -119,7 +144,7 @@ export default function ElectionResults() {
         address: maciRlaAddress,
         abi: MACI_RLA_ABI,
         functionName: 'challenge',
-        args: [BigInt(id as string)],
+        args: [auditId],
         value: challengeBondRequired,
       } as any);
 
@@ -134,7 +159,7 @@ export default function ElectionResults() {
   };
 
   const handleClaimTimeout = async () => {
-    if (!walletClientData || !publicClient) return;
+    if (!walletClientData || !publicClient || !auditId) return;
     const maciRlaAddress = process.env.NEXT_PUBLIC_MACI_RLA_ADDRESS as `0x${string}`;
     if (!maciRlaAddress) return;
 
@@ -146,7 +171,7 @@ export default function ElectionResults() {
         address: maciRlaAddress,
         abi: MACI_RLA_ABI,
         functionName: 'claimChallengeTimeout',
-        args: [BigInt(id as string)],
+        args: [auditId],
       } as any);
 
       await publicClient.waitForTransactionReceipt({ hash });
@@ -205,99 +230,110 @@ export default function ElectionResults() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-sv-text-muted hover:text-sv-accent transition-colors mb-8">
+      <div className="max-w-2xl mx-auto space-y-12">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-accent-blue transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Elections
+          Back to Elections
         </Link>
 
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-heading font-bold text-sv-text-primary">Election #{id}</h1>
-          <span className={`sv-tag ${
-            isFinalized ? 'bg-sv-emerald/15 text-sv-emerald' :
-            isRejected ? 'bg-sv-error/15 text-sv-error-light' :
-            isChallenged ? 'bg-sv-error/15 text-sv-error-light' :
-            'bg-sv-warning/15 text-sv-warning'
-          }`}>
-            <span className={`sv-badge-dot ${
-              isFinalized ? 'bg-sv-emerald' :
-              isRejected || isChallenged ? 'bg-sv-error' :
-              'bg-sv-warning'
-            }`} />
-            {isFinalized ? 'Finalized' :
-             isRejected ? 'Rejected' :
-             isChallenged ? 'Challenged' :
-             isTentative ? 'Tentative' : 'Auditing'}
-          </span>
-        </div>
-        <p className="text-sm text-sv-text-muted mb-10">
-          {isFinalized ? 'Result verified and finalized.' :
-           isRejected ? 'Result rejected — audit failed.' :
-           isChallenged ? 'Awaiting coordinator response to challenge.' :
-           isTentative ? 'Challenge period active.' :
-           'Audit in progress.'}
-        </p>
+        <header className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-mono text-primary uppercase tracking-wider">Election #{id}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                isFinalized ? 'bg-emerald-500' :
+                isRejected || isChallenged ? 'bg-rose-500' :
+                'bg-amber-500'
+              }`}></span>
+              <span className="text-xs uppercase tracking-wide text-zinc-400 font-medium">
+                {isFinalized ? 'Finalized' :
+                 isRejected ? 'Rejected' :
+                 isChallenged ? 'Challenged' :
+                 isTentative ? 'Tentative' : 'Auditing'}
+              </span>
+            </div>
+          </div>
+          <h1 className="text-4xl font-light tracking-tight text-white">
+            MACI + RLA Verification
+          </h1>
+          <p className="text-sm text-zinc-400 max-w-lg">
+            {isFinalized ? 'Result verified and finalized via risk-limiting audit.' :
+             isRejected ? 'Result rejected — audit failed verification.' :
+             isChallenged ? 'Awaiting coordinator response to challenge.' :
+             isTentative ? 'Challenge period active for result verification.' :
+             'Audit in progress with sample verification.'}
+          </p>
+        </header>
+
+        <div className="border-t border-border-dark w-full"></div>
 
         {(error || success) && (
-          <div className={`mb-8 px-5 py-4 text-sm rounded-lg border flex items-start gap-3 ${
+          <div className={`px-5 py-4 text-sm border flex items-start gap-3 ${
             success
-              ? 'bg-sv-emerald/10 text-sv-emerald border-sv-emerald/20'
-              : 'bg-sv-error/10 text-sv-error-light border-sv-error/20'
+              ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20'
+              : 'bg-rose-950/20 text-rose-400 border-rose-500/20'
           }`}>
-            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              {success ? (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              ) : (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              )}
-            </svg>
             {success || error}
           </div>
         )}
 
+        {/* Warning: Suspicious 0 vs 0 result */}
+        {totalVotes === 0 && audit.phase >= AuditPhase.Committed && (
+          <div className="px-5 py-4 text-sm border bg-rose-950/20 text-rose-400 border-rose-500/20 space-y-2">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <div className="font-semibold">⚠️ Suspicious Result: 0 vs 0</div>
+                <div className="text-xs mt-1 text-rose-300/80">
+                  This result is likely incorrect. Common causes:
+                </div>
+                <ul className="text-xs mt-2 space-y-1 text-rose-300/80 list-disc list-inside">
+                  <li><strong>Coordinator key mismatch</strong>: Votes were encrypted with a different public key than expected</li>
+                  <li><strong>No votes submitted</strong>: Check if users actually voted before the poll closed</li>
+                  <li><strong>Wrong poll processed</strong>: Coordinator may have processed the wrong poll ID</li>
+                </ul>
+                <div className="text-xs mt-3 text-rose-300/80">
+                  → For multi-poll setups: Each poll has its own coordinator keypair. Votes must be encrypted with the correct poll's public key.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Vote Results */}
-        <div className="sv-card p-6 mb-5">
-          <h3 className="sv-section-label mb-6">Vote Tally</h3>
-
-          <div className="space-y-5">
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <span className="text-sm font-medium text-sv-emerald">Yes / For</span>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-sv-text-primary">{yesPct}%</span>
-                  <span className="text-xs text-sv-text-muted ml-2 font-mono">
-                    {Number(audit.yesVotes)} votes
-                  </span>
-                </div>
-              </div>
-              <div className="h-2.5 bg-sv-surface-2 rounded-full overflow-hidden">
-                <div className="h-full bg-sv-emerald rounded-full transition-all duration-500" style={{ width: `${yesPct}%` }} />
-              </div>
+        <section className="space-y-8">
+          <div className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm font-medium tracking-wider text-zinc-400">FOR</span>
+              <span className="text-5xl font-light text-white">{yesPct}%</span>
             </div>
-
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <span className="text-sm font-medium text-sv-error-light">No / Against</span>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-sv-text-primary">{noPct}%</span>
-                  <span className="text-xs text-sv-text-muted ml-2 font-mono">
-                    {Number(audit.noVotes)} votes
-                  </span>
-                </div>
-              </div>
-              <div className="h-2.5 bg-sv-surface-2 rounded-full overflow-hidden">
-                <div className="h-full bg-sv-error-light rounded-full transition-all duration-500" style={{ width: `${noPct}%` }} />
-              </div>
+            <div className="w-full h-3 bg-surface-dark overflow-hidden">
+              <div className="h-full bg-white transition-all duration-500" style={{ width: `${yesPct}%` }}></div>
+            </div>
+            <div className="flex justify-between text-xs text-zinc-500 font-mono">
+              <span>{Number(audit.yesVotes)} votes</span>
             </div>
           </div>
 
-          <div className="mt-5 pt-5 border-t border-sv-border-subtle flex items-center justify-between text-xs text-sv-text-muted">
-            <span>Total: {totalVotes} votes</span>
-            <span>Margin: {Math.abs(yesPct - noPct)}%</span>
+          <div className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm font-medium tracking-wider text-zinc-500">AGAINST</span>
+              <span className="text-3xl font-light text-[#71717a]">{noPct}%</span>
+            </div>
+            <div className="w-full h-2 bg-surface-dark overflow-hidden">
+              <div className="h-full bg-[#3f3f46] transition-all duration-500" style={{ width: `${noPct}%` }}></div>
+            </div>
+            <div className="flex justify-between text-xs text-zinc-500 font-mono">
+              <span>{Number(audit.noVotes)} votes</span>
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* RLA Status */}
         <div className="mb-5">
@@ -323,112 +359,75 @@ export default function ElectionResults() {
 
         {/* Challenge Action */}
         {isTentative && (
-          <div className="sv-card border-sv-warning/30 shadow-glow-warning p-6 mb-5">
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-4 h-4 text-sv-warning" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <h3 className="text-sm font-semibold text-sv-warning uppercase tracking-wider">
-                Challenge Result
-              </h3>
+          <section className="relative overflow-hidden bg-amber-950/20 border-t-2 border-amber-500/70 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none"></div>
+            <div className="space-y-2 relative z-10">
+              <h3 className="text-xs font-bold tracking-widest uppercase text-amber-500">Challenge Period Open</h3>
+              <p className="text-sm text-zinc-400 max-w-sm">
+                Submit a fraud proof if you detect inconsistencies in the RLA sample set.
+                Bond: {(Number(challengeBondRequired) / 1e18).toFixed(6)} ETH
+              </p>
             </div>
-            <p className="text-xs text-sv-text-muted mb-5">
-              Post a bond to force the coordinator to prove ALL batches.
-              If they fail to respond within 3 days, the result is rejected and you receive
-              the coordinator&apos;s stake + your bond.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="text-xs">
-                <span className="text-sv-text-muted">Bond: </span>
-                <span className="text-sv-text-primary font-mono font-semibold">
-                  {(Number(challengeBondRequired) / 1e18).toFixed(6)} ETH
-                </span>
-              </div>
+            <div className="flex flex-col items-end gap-3 relative z-10 w-full sm:w-auto">
               <button
                 onClick={handleChallenge}
                 disabled={challengeLoading || !walletClientData}
-                className="sv-btn-warning"
+                className="w-full sm:w-auto px-6 py-2 bg-transparent hover:bg-amber-500/10 border border-amber-500/50 hover:border-amber-500 text-amber-500 text-xs font-medium uppercase tracking-wider transition-all duration-200 disabled:opacity-50"
               >
-                {challengeLoading ? 'Submitting...' : 'Challenge'}
+                {challengeLoading ? 'Submitting...' : 'Challenge Result'}
               </button>
+              {!walletClientData && (
+                <p className="text-xs text-rose-400">Connect wallet to challenge</p>
+              )}
             </div>
-            {!walletClientData && (
-              <p className="text-xs text-sv-error-light mt-3">Connect wallet to challenge.</p>
-            )}
-          </div>
+          </section>
         )}
 
         {/* Challenged — claim timeout */}
         {isChallenged && (
-          <div className="sv-card border-sv-error/30 shadow-glow-error p-6 mb-5">
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-4 h-4 text-sv-error-light" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <h3 className="text-sm font-semibold text-sv-error-light uppercase tracking-wider">
-                Challenge Active
-              </h3>
+          <section className="bg-rose-950/20 border border-rose-500/20 p-6 sm:p-8 space-y-6">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold tracking-widest uppercase text-rose-400">Challenge Active</h3>
             </div>
-            <div className="grid grid-cols-2 gap-6 mb-5">
-              <div>
-                <div className="sv-stat-label">Challenger</div>
-                <div className="text-sm text-sv-text-primary font-mono text-2xs mt-1">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Challenger</p>
+                <p className="text-sm font-mono text-white">
                   {audit.challenger !== zeroAddr
                     ? `${audit.challenger.slice(0, 10)}...${audit.challenger.slice(-8)}`
                     : 'None'}
-                </div>
+                </p>
               </div>
-              <div>
-                <div className="sv-stat-label">Bond</div>
-                <div className="text-sm text-sv-text-primary mt-1">
-                  {(Number(audit.challengeBond) / 1e18).toFixed(6)} ETH
-                </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Bond</p>
+                <p className="text-sm text-white">{(Number(audit.challengeBond) / 1e18).toFixed(6)} ETH</p>
               </div>
-              <div>
-                <div className="sv-stat-label">Deadline</div>
-                <div className="text-sm text-sv-text-primary mt-1">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Deadline</p>
+                <p className="text-sm text-white">
                   {audit.challengeDeadline > 0
                     ? new Date(audit.challengeDeadline * 1000).toLocaleString()
                     : 'N/A'}
-                </div>
+                </p>
               </div>
-              <div>
-                <div className="sv-stat-label">Status</div>
-                <div className={`text-sm font-semibold mt-1 ${challengeDeadlinePassed ? 'text-sv-error-light' : 'text-sv-warning'}`}>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Status</p>
+                <p className={`text-sm font-semibold ${challengeDeadlinePassed ? 'text-rose-400' : 'text-amber-500'}`}>
                   {challengeDeadlinePassed ? 'Deadline passed' : 'Awaiting response'}
-                </div>
+                </p>
               </div>
             </div>
             {challengeDeadlinePassed && (
               <button
                 onClick={handleClaimTimeout}
                 disabled={challengeLoading || !walletClientData}
-                className="sv-btn-danger w-full"
+                className="w-full px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm uppercase tracking-wider transition-colors disabled:opacity-50"
               >
                 {challengeLoading ? 'Claiming...' : 'Claim Timeout (Reject Result)'}
               </button>
             )}
-          </div>
+          </section>
         )}
-
-        {/* Coordinator Info */}
-        <div className="sv-card p-6">
-          <h3 className="sv-section-label mb-5">Coordinator</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <div className="sv-stat-label">Address</div>
-              <div className="text-sm text-sv-text-primary font-mono text-2xs mt-1">
-                {audit.coordinator.slice(0, 10)}...{audit.coordinator.slice(-8)}
-              </div>
-            </div>
-            <div>
-              <div className="sv-stat-label">Stake</div>
-              <div className="text-sm text-sv-text-primary mt-1">
-                {(Number(audit.stakeAmount) / 1e18).toFixed(4)} ETH
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </Layout>
   );
