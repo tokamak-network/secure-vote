@@ -30,7 +30,7 @@ function calcSampleCounts(
   totalVotes: number,
   pmBatchCount: number,
   tvBatchCount: number,
-  pmBatchSize: number,
+  _pmBatchSize: number,
   tvBatchSize: number,
 ): { pmSamples: number; tvSamples: number } {
   if (totalVotes === 0) return { pmSamples: 0, tvSamples: 0 };
@@ -38,17 +38,17 @@ function calcSampleCounts(
 
   const votesToFlip = Math.floor(margin / 2) + 1;
 
-  // PM
-  let pmCorrupt = Math.ceil(votesToFlip / pmBatchSize);
-  if (pmCorrupt > pmBatchCount) pmCorrupt = pmBatchCount;
-  let pmSamples = Math.ceil((CONFIDENCE_X1000 * pmBatchCount) / (pmCorrupt * 1000));
-  if (pmSamples > pmBatchCount) pmSamples = pmBatchCount;
+  // PM: Sequential dependency requires full verification.
+  // Each batch depends on the previous commitment, so sampling cannot
+  // detect manipulation in earlier batches.
+  const pmSamples = pmBatchCount;
 
-  // TV
+  // TV: Batches are independent — RLA sampling is safe.
+  const tvMaxSamples = tvBatchCount > 1 ? tvBatchCount - 1 : tvBatchCount;
   let tvCorrupt = Math.ceil(votesToFlip / tvBatchSize);
   if (tvCorrupt > tvBatchCount) tvCorrupt = tvBatchCount;
   let tvSamples = Math.ceil((CONFIDENCE_X1000 * tvBatchCount) / (tvCorrupt * 1000));
-  if (tvSamples > tvBatchCount) tvSamples = tvBatchCount;
+  if (tvSamples > tvMaxSamples) tvSamples = tvMaxSamples;
 
   return { pmSamples, tvSamples };
 }

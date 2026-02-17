@@ -143,13 +143,14 @@ GAS_OUTPUT="$PROJECT_DIR/experiments/results/gas-analysis-results.json"
 if npx ts-node experiments/gas-analysis.ts 2>&1; then
   if [ -f "$GAS_OUTPUT" ]; then
     GAS_COUNT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$GAS_OUTPUT','utf8')).length)")
-    # Check a 1000-voter 80% margin row shows savings > 90%
+    # Check a 1000-voter 80% margin row shows savings > 60%
+    # (PM full verification required: ~67% at 1000 voters/80% margin)
     SAVINGS_1K=$(node -e "
       const d=JSON.parse(require('fs').readFileSync('$GAS_OUTPUT','utf8'));
       const r=d.find(x=>x.voters===1000 && x.marginPct===80);
       console.log(r ? r.savingsPct : 0);
     ")
-    if [ "$GAS_COUNT" -gt 0 ] && [ "$SAVINGS_1K" -gt 90 ]; then
+    if [ "$GAS_COUNT" -gt 0 ] && [ "$SAVINGS_1K" -gt 60 ]; then
       step_pass "Gas analysis — ${GAS_COUNT} scenarios, 1000-voter/80% savings=${SAVINGS_1K}%"
     else
       step_fail "Gas analysis" "unexpected results (count=$GAS_COUNT, savings=$SAVINGS_1K%)"

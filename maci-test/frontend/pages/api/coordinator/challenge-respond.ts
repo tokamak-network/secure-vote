@@ -4,10 +4,19 @@ import { publicClient, walletClient, MACI_RLA_ABI, getAddresses } from '@/lib/se
 import * as path from 'path';
 import * as fs from 'fs';
 
-const PROOFS_DIR = path.resolve(process.cwd(), '../proofs-web');
-const STATUS_FILE = path.join(PROOFS_DIR, 'status.json');
-const PROVE_BATCHES_FILE = path.join(PROOFS_DIR, 'prove-batches.json');
 const PROJECT_ROOT = path.resolve(process.cwd(), '..');
+
+function getProofsDir(pollId: number | string): string {
+  return path.resolve(process.cwd(), `../proofs-web/poll-${pollId}`);
+}
+
+function getStatusFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'status.json');
+}
+
+function getProveBatchesFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'prove-batches.json');
+}
 
 /** Convert snarkjs proof to uint256[8] for on-chain verification. */
 function proofToUint256Array(proof: any): readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] {
@@ -54,17 +63,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, error: 'pollId required' });
     }
 
-    const { maciRla } = getAddresses();
-    if (!maciRla) {
-      return res.status(500).json({ success: false, error: 'MaciRLA address not configured' });
+    const proofsDir = getProofsDir(pollId);
+    const proveBatchesFile = getProveBatchesFile(pollId);
+
+    // Ensure poll-specific directory exists
+    if (!fs.existsSync(proofsDir)) {
+      fs.mkdirSync(proofsDir, { recursive: true });
     }
+
+    const { maci, maciRla } = getAddresses();
+    if (!maciRla || !maci) {
+      return res.status(500).json({ success: false, error: 'Contract addresses not configured' });
+    }
+
+    // pollId is the MaciRLA audit ID - use it directly
+    const rlaPollId = BigInt(pollId);
 
     // Read audit data to find unverified batches
     const audit = await publicClient.readContract({
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'pollAudits',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any) as any;
 
     const phase = Number(audit[22]);
@@ -82,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         address: maciRla,
         abi: MACI_RLA_ABI,
         functionName: 'pmBatchVerified',
-        args: [BigInt(pollId), BigInt(i)],
+        args: [rlaPollId, BigInt(i)],
       } as any) as boolean;
       if (!verified) unverifiedPm.push(i - 1); // 0-based file index
     }
@@ -94,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         address: maciRla,
         abi: MACI_RLA_ABI,
         functionName: 'tvBatchVerified',
-        args: [BigInt(pollId), BigInt(i)],
+        args: [rlaPollId, BigInt(i)],
       } as any) as boolean;
       if (!verified) unverifiedTv.push(i - 1); // 0-based file index
     }
@@ -105,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         address: maciRla,
         abi: MACI_RLA_ABI,
         functionName: 'finalizeChallengeResponse',
-        args: [BigInt(pollId)],
+        args: [rlaPollId],
       } as any);
       await publicClient.waitForTransactionReceipt({ hash });
 
@@ -119,19 +139,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check if proofs already exist for these batches
     const needProofGen: { pm: number[]; tv: number[] } = { pm: [], tv: [] };
     for (const idx of unverifiedPm) {
-      if (!fs.existsSync(path.join(PROOFS_DIR, `process_${idx}.json`))) {
+      if (!fs.existsSync(path.join(proofsDir, `process_${idx}.json`))) {
         needProofGen.pm.push(idx);
       }
     }
     for (const idx of unverifiedTv) {
-      if (!fs.existsSync(path.join(PROOFS_DIR, `tally_${idx}.json`))) {
+      if (!fs.existsSync(path.join(proofsDir, `tally_${idx}.json`))) {
         needProofGen.tv.push(idx);
       }
     }
 
     if (needProofGen.pm.length > 0 || needProofGen.tv.length > 0) {
       // Need to generate proofs first
-      fs.writeFileSync(PROVE_BATCHES_FILE, JSON.stringify(needProofGen, null, 2));
+      fs.writeFileSync(proveBatchesFile, JSON.stringify(needProofGen, null, 2));
 
       const cmd = `cd "${PROJECT_ROOT}" && npx hardhat run scripts/coordinator-prove-batch.ts --network localhost`;
       exec(cmd, { maxBuffer: 10 * 1024 * 1024, timeout: 600000 }, async (error, stdout, stderr) => {
@@ -143,7 +163,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // After proof generation, submit all unverified proofs
         try {
-          await submitChallengeProofs(maciRla, BigInt(pollId), unverifiedPm, unverifiedTv);
+          await submitChallengeProofs(maciRla, rlaPollId, unverifiedPm, unverifiedTv);
         } catch (err: any) {
           console.error('Failed to submit challenge proofs:', err.message);
         }
@@ -159,7 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Proofs exist — submit them directly
-    await submitChallengeProofs(maciRla, BigInt(pollId), unverifiedPm, unverifiedTv);
+    await submitChallengeProofs(maciRla, rlaPollId, unverifiedPm, unverifiedTv);
 
     return res.status(200).json({
       success: true,
@@ -177,9 +197,11 @@ async function submitChallengeProofs(
   unverifiedPm: number[],
   unverifiedTv: number[],
 ) {
+  const proofsDir = getProofsDir(Number(pollId));
+
   // Submit PM proofs for challenge
   for (const fileIdx of unverifiedPm) {
-    const proofFile = path.join(PROOFS_DIR, `process_${fileIdx}.json`);
+    const proofFile = path.join(proofsDir, `process_${fileIdx}.json`);
     if (!fs.existsSync(proofFile)) continue;
     const data = JSON.parse(fs.readFileSync(proofFile, 'utf8'));
     const proof = proofToUint256Array(data.proof);
@@ -197,7 +219,7 @@ async function submitChallengeProofs(
 
   // Submit TV proofs for challenge
   for (const fileIdx of unverifiedTv) {
-    const proofFile = path.join(PROOFS_DIR, `tally_${fileIdx}.json`);
+    const proofFile = path.join(proofsDir, `tally_${fileIdx}.json`);
     if (!fs.existsSync(proofFile)) continue;
     const data = JSON.parse(fs.readFileSync(proofFile, 'utf8'));
     const proof = proofToUint256Array(data.proof);

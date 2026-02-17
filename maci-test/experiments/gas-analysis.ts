@@ -89,15 +89,15 @@ function calcSampleCounts(
 
   const votesToFlip = Math.floor(margin / 2) + 1;
 
-  let pmCorrupt = Math.ceil(votesToFlip / PM_BATCH_SIZE);
-  if (pmCorrupt > pmBatchCount) pmCorrupt = pmBatchCount;
-  let pmSamples = Math.ceil((CONFIDENCE_X1000 * pmBatchCount) / (pmCorrupt * 1000));
-  if (pmSamples > pmBatchCount) pmSamples = pmBatchCount;
+  // PM: Sequential dependency requires full verification.
+  const pmSamples = pmBatchCount;
 
+  // TV: Independent batches — RLA sampling is safe.
+  const tvMaxSamples = tvBatchCount > 1 ? tvBatchCount - 1 : tvBatchCount;
   let tvCorrupt = Math.ceil(votesToFlip / TV_BATCH_SIZE);
   if (tvCorrupt > tvBatchCount) tvCorrupt = tvBatchCount;
   let tvSamples = Math.ceil((CONFIDENCE_X1000 * tvBatchCount) / (tvCorrupt * 1000));
-  if (tvSamples > tvBatchCount) tvSamples = tvBatchCount;
+  if (tvSamples > tvMaxSamples) tvSamples = tvMaxSamples;
 
   return { pmSamples, tvSamples };
 }
