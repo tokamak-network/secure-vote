@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useAccount, usePublicClient } from 'wagmi';
 import { writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { wagmiConfig } from '@/lib/wagmi-config';
-import { MACI_ABI, POLL_ABI } from '@/lib/contracts';
+import { MACI_ABI, POLL_ABI, MACI_RLA_ABI } from '@/lib/contracts';
 import Layout from '@/components/Layout';
 import Link from 'next/link';
 
@@ -30,6 +30,44 @@ export default function ElectionDetail() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [lastVoteChoice, setLastVoteChoice] = useState<string | null>(null);
+  const [rlaPollId, setRlaPollId] = useState<number | null>(null);
+
+  // Load RLA Poll ID for results link
+  useEffect(() => {
+    if (id !== undefined && publicClient) {
+      loadRlaPollId();
+    }
+  }, [id, publicClient]);
+
+  const loadRlaPollId = async () => {
+    if (!publicClient || id === undefined) return;
+    try {
+      const maciAddress = process.env.NEXT_PUBLIC_MACI_ADDRESS as `0x${string}`;
+      const maciRlaAddress = process.env.NEXT_PUBLIC_MACI_RLA_ADDRESS as `0x${string}`;
+      if (!maciAddress || !maciRlaAddress) return;
+
+      // Get poll address
+      const pollInfo = await publicClient.readContract({
+        address: maciAddress,
+        abi: MACI_ABI,
+        functionName: 'getPoll',
+        args: [BigInt(id as string)],
+      } as any) as any;
+      const pollAddress = pollInfo[0] || pollInfo.poll;
+
+      // Get RLA Poll ID
+      const rlaId = await publicClient.readContract({
+        address: maciRlaAddress,
+        abi: MACI_RLA_ABI,
+        functionName: 'pollToAuditId',
+        args: [pollAddress as `0x${string}`],
+      } as any) as bigint;
+
+      if (rlaId > 0n) {
+        setRlaPollId(Number(rlaId));
+      }
+    } catch {}
+  };
 
   // Detect stale keys
   useEffect(() => {
@@ -319,164 +357,202 @@ export default function ElectionDetail() {
     setTimeout(() => setSuccess(null), 8000);
   };
 
-  const StepIcon = ({ step, done, active }: { step: number; done: boolean; active: boolean }) => (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-      done ? 'bg-sv-emerald/20 text-sv-emerald border border-sv-emerald/40' :
-      active ? 'bg-sv-accent/20 text-sv-accent border border-sv-accent/40' :
-      'bg-sv-surface-2 text-sv-text-disabled border border-sv-border-subtle'
-    }`}>
-      {done ? (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-      ) : step}
-    </div>
-  );
 
   return (
     <Layout>
-      <div className="max-w-lg mx-auto">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-sv-text-muted hover:text-sv-accent transition-colors mb-8">
+      <div className="max-w-2xl mx-auto">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-accent-blue transition-colors mb-8">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Elections
+          Back to Elections
         </Link>
 
-        <h1 className="text-heading font-bold text-sv-text-primary mb-1">Election #{id}</h1>
-        <p className="text-sm text-sv-text-muted mb-10">
-          Cast your vote privately using MACI encryption.
-        </p>
+        <header className="mb-12">
+          <div className="flex items-end justify-between">
+            <div>
+              <h1 className="text-4xl font-light text-white tracking-tight mb-2">Election #{id}</h1>
+              <p className="text-base text-zinc-500">
+                MACI-encrypted voting with zero-knowledge proofs
+              </p>
+            </div>
+            {rlaPollId !== null && (
+              <Link
+                href={`/elections/${rlaPollId}/results`}
+                className="text-sm text-accent-blue hover:text-blue-400 transition-colors"
+              >
+                View Results →
+              </Link>
+            )}
+          </div>
+        </header>
 
         {(error || success) && (
-          <div className={`mb-8 px-5 py-4 text-sm rounded-lg border flex items-start gap-3 ${
+          <div className={`mb-8 px-5 py-4 text-sm border flex items-start gap-3 ${
             success
-              ? 'bg-sv-emerald/10 text-sv-emerald border-sv-emerald/20'
-              : 'bg-sv-error/10 text-sv-error-light border-sv-error/20'
+              ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20'
+              : 'bg-rose-950/20 text-rose-400 border-rose-500/20'
           }`}>
-            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              {success ? (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              ) : (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              )}
-            </svg>
             {success || error}
           </div>
         )}
 
-        {/* Step 1: Connect Wallet */}
-        <div className="relative">
-          <div className="sv-card p-5 mb-2">
-            <div className="flex items-center gap-4 mb-2">
-              <StepIcon step={1} done={isConnected} active={false} />
-              <h3 className="text-sm font-semibold text-sv-text-primary">Connect Wallet</h3>
-            </div>
-            <p className="text-xs text-sv-text-muted ml-12">
-              {isConnected
-                ? <span className="font-mono text-sv-text-secondary">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-                : 'Use the Connect button in the header'}
-            </p>
-          </div>
-
-          {/* Connector line */}
-          <div className="absolute left-[2.1rem] top-[4.5rem] w-px h-4 bg-sv-border-subtle" />
-
-          {/* Step 2: MACI Signup */}
-          <div className="sv-card p-5 mb-2 mt-2">
-            <div className="flex items-center gap-4 mb-2">
-              <StepIcon step={2} done={isSignedUp} active={!isSignedUp && isConnected} />
-              <h3 className="text-sm font-semibold text-sv-text-primary">MACI Signup</h3>
-            </div>
-            {isSignedUp ? (
-              <div className="ml-12">
-                <p className="text-xs text-sv-emerald mb-3">
-                  Signed up (state: {keyData?.stateIndex}, msgs: {(keyData?.nonce || 1) - 1})
-                </p>
-                <button
-                  onClick={handleKeyChange}
-                  disabled={keyChangeLoading}
-                  className="sv-btn-ghost text-xs px-3 py-1.5"
-                >
-                  {keyChangeLoading ? 'Changing...' : 'Change Key'}
-                </button>
-                <p className="text-xs text-sv-text-disabled mt-2">
-                  If coerced, change your key to invalidate votes the coercer observed.
-                </p>
-              </div>
-            ) : (
-              <div className="ml-12">
-                <p className="text-xs text-sv-text-muted mb-4">
-                  Generate a MACI keypair for private voting. Stored locally in your browser.
-                </p>
-                <button
-                  onClick={handleSignup}
-                  disabled={!isConnected || signupLoading}
-                  className="sv-btn-primary text-xs"
-                >
-                  {signupLoading ? 'Signing up...' : 'Generate Key & Sign Up'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Connector line */}
-          <div className="absolute left-[2.1rem] bottom-[calc(100%-10.5rem)] w-px h-4 bg-sv-border-subtle" style={{ display: 'none' }} />
-
-          {/* Step 3: Vote */}
-          <div className="sv-card p-5 mt-2">
-            <div className="flex items-center gap-4 mb-2">
-              <StepIcon step={3} done={hasVoted} active={!hasVoted && isSignedUp} />
-              <h3 className="text-sm font-semibold text-sv-text-primary">
-                {hasVoted ? 'Change Vote' : 'Cast Vote'}
-              </h3>
-              {hasVoted && lastVoteChoice && (
-                <span className="sv-tag bg-sv-surface-2 text-sv-text-muted">
-                  Current: {lastVoteChoice}
-                </span>
+        {/* Vertical Timeline */}
+        <section className="space-y-0 relative">
+          {/* Step 1: Wallet */}
+          <div className="relative pl-8 pb-10 before:absolute before:left-[7px] before:top-[20px] before:bottom-0 before:w-px before:bg-border-dark">
+            <div className={`absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center z-10 ring-4 ring-background-dark ${
+              isConnected ? 'bg-primary' : 'border-2 border-zinc-600 bg-background-dark'
+            }`}>
+              {isConnected && (
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
               )}
             </div>
-            {hasVoted && (
-              <p className="text-xs text-sv-text-disabled ml-12 mb-3">
-                You can re-vote anytime before tallying. Only the last valid vote counts.
-              </p>
-            )}
-            <div className="ml-12">
-              <div className="flex gap-3 mb-4">
+            <div className="flex flex-col">
+              <span className="text-[11px] font-bold uppercase tracking-widest-custom text-zinc-500 mb-2">Wallet</span>
+              {isConnected ? (
+                <div className="flex items-center justify-between p-3 border border-border-dark bg-surface-dark/50">
+                  <span className="font-mono text-sm text-zinc-300">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                  <span className="text-xs text-emerald-500 font-medium">Connected</span>
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-500">Use the Connect button in the header</p>
+              )}
+            </div>
+          </div>
+
+          {/* Step 2: Registration */}
+          <div className="relative pl-8 pb-10 before:absolute before:left-[7px] before:top-[20px] before:bottom-0 before:w-px before:bg-border-dark">
+            <div className={`absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center z-10 ring-4 ring-background-dark ${
+              isSignedUp ? 'bg-primary' : 'border-2 border-zinc-600 bg-background-dark'
+            }`}>
+              {isSignedUp && (
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-bold uppercase tracking-widest-custom text-zinc-500 mb-2">Registration</span>
+              {isSignedUp ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm text-white font-medium">Eligible & Registered</span>
+                    <span className="text-xs text-zinc-600">State #{keyData?.stateIndex}</span>
+                  </div>
+                  <button
+                    onClick={handleKeyChange}
+                    disabled={keyChangeLoading}
+                    className="text-sm text-accent-blue hover:text-blue-400 disabled:opacity-50 transition-colors"
+                  >
+                    {keyChangeLoading ? 'Changing key...' : 'Change Key'}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-zinc-500 mb-4">
+                    Generate a MACI keypair for private voting. Stored locally in your browser.
+                  </p>
+                  <button
+                    onClick={handleSignup}
+                    disabled={!isConnected || signupLoading}
+                    className="bg-accent-blue text-white px-5 py-2.5 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {signupLoading ? 'Signing up...' : 'Generate Key & Sign Up'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Step 3: Vote */}
+          <div className="relative pl-8">
+            <div className={`absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center z-10 ring-4 ring-background-dark ${
+              hasVoted ? 'bg-primary' : isSignedUp ? 'border-2 border-white bg-transparent' : 'border-2 border-zinc-600 bg-background-dark'
+            }`}>
+              {hasVoted ? (
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              ) : isSignedUp && (
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-[11px] font-bold uppercase tracking-widest-custom mb-4 ${isSignedUp ? 'text-white' : 'text-zinc-500'}`}>
+                {hasVoted ? 'Change Vote' : 'Vote'}
+              </span>
+              {hasVoted && lastVoteChoice && (
+                <p className="text-xs text-zinc-500 mb-4">Current: {lastVoteChoice} • You can re-vote anytime before tallying</p>
+              )}
+              <div className="space-y-3 mb-8">
                 <button
                   onClick={() => setSelectedVote('yes')}
-                  className={`flex-1 py-4 text-sm font-semibold rounded-lg transition-all border ${
-                    selectedVote === 'yes'
-                      ? 'bg-sv-emerald/15 text-sv-emerald border-sv-emerald/40 shadow-glow-emerald'
-                      : 'bg-sv-surface-2 text-sv-text-muted border-sv-border-subtle hover:border-sv-border hover:text-sv-text-secondary'
-                  }`}
+                  disabled={!isSignedUp}
+                  className={`w-full text-left group relative ${!isSignedUp && 'opacity-40 cursor-not-allowed'}`}
                 >
-                  Yes / For
+                  <div className={`absolute left-0 top-0 bottom-0 w-0.5 z-20 ${selectedVote === 'yes' ? 'bg-white' : 'bg-transparent'}`}></div>
+                  <div className={`relative flex items-center justify-between px-5 py-4 border-y border-r transition-all ${
+                    selectedVote === 'yes'
+                      ? 'bg-surface-dark/50 border-zinc-700'
+                      : 'bg-transparent border-border-dark hover:border-zinc-700'
+                  }`}>
+                    <div>
+                      <span className={`block text-lg font-normal mb-0.5 ${selectedVote === 'yes' ? 'text-white' : 'text-zinc-400'}`}>For</span>
+                      <span className="block text-xs text-zinc-500">Approve the proposal</span>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                      selectedVote === 'yes' ? 'border-white' : 'border-zinc-600'
+                    }`}>
+                      {selectedVote === 'yes' && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                    </div>
+                  </div>
                 </button>
+
                 <button
                   onClick={() => setSelectedVote('no')}
-                  className={`flex-1 py-4 text-sm font-semibold rounded-lg transition-all border ${
-                    selectedVote === 'no'
-                      ? 'bg-sv-error/15 text-sv-error-light border-sv-error/40 shadow-glow-error'
-                      : 'bg-sv-surface-2 text-sv-text-muted border-sv-border-subtle hover:border-sv-border hover:text-sv-text-secondary'
-                  }`}
+                  disabled={!isSignedUp}
+                  className={`w-full text-left group relative ${!isSignedUp ? 'opacity-40 cursor-not-allowed' : 'opacity-60 hover:opacity-100 transition-opacity'}`}
                 >
-                  No / Against
+                  <div className={`absolute left-0 top-0 bottom-0 w-0.5 z-20 ${selectedVote === 'no' ? 'bg-white' : 'bg-transparent'}`}></div>
+                  <div className={`relative flex items-center justify-between px-5 py-4 border transition-all ${
+                    selectedVote === 'no'
+                      ? 'border-zinc-700'
+                      : 'border-border-dark hover:border-zinc-600'
+                  }`}>
+                    <div>
+                      <span className={`block text-lg font-normal mb-0.5 transition-colors ${
+                        selectedVote === 'no' ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'
+                      }`}>Against</span>
+                      <span className="block text-xs text-zinc-600 group-hover:text-zinc-500 transition-colors">Reject the proposal</span>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                      selectedVote === 'no' ? 'border-white' : 'border-zinc-600 group-hover:border-zinc-400'
+                    }`}>
+                      {selectedVote === 'no' && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                    </div>
+                  </div>
                 </button>
               </div>
+
               <button
                 onClick={handleVote}
                 disabled={!selectedVote || !isSignedUp || voteLoading}
-                className="sv-btn-primary w-full"
+                className="w-full bg-accent-blue hover:bg-blue-600 text-white font-medium py-4 px-6 text-sm tracking-wide transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {voteLoading ? 'Encrypting & Submitting...' : hasVoted ? 'Submit Re-Vote' : 'Submit Encrypted Vote'}
+                {voteLoading ? 'Encrypting & Submitting...' : hasVoted ? 'SUBMIT RE-VOTE' : 'SUBMIT VOTE'}
               </button>
-              <p className="text-xs text-sv-text-disabled mt-3">
-                Encrypted with MACI. Submitted via relayer, falls back to MetaMask.
-              </p>
+
+              <div className="mt-6 flex items-start gap-2 text-zinc-600">
+                <p className="text-[13px] leading-relaxed">
+                  Encrypted with MACI (Minimal Anti-Collusion Infrastructure). Your vote is private, tamper-proof, and secured by zero-knowledge proofs.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </Layout>
   );
