@@ -147,6 +147,10 @@ contract MaciRLA is SnarkCommon, DomainObjs {
     mapping(uint256 => PollAudit) public pollAudits;
     uint256 public nextPollId;
 
+    /// @notice Reverse mapping: MACI Poll address → RLA Poll ID
+    ///         Allows finding the RLA audit for a given MACI poll
+    mapping(address => uint256) public pollToAuditId;
+
     /// @notice PM intermediate sbCommitments per poll.
     ///         pmCommitments[pollId][0] = initial sbCommitment (from Poll),
     ///         pmCommitments[pollId][i] = sbCommitment after batch i.
@@ -280,6 +284,10 @@ contract MaciRLA is SnarkCommon, DomainObjs {
 
         // Store poll audit
         uint256 pollId = nextPollId++;
+
+        // Store reverse mapping: MACI Poll address → RLA Poll ID
+        pollToAuditId[address(_poll)] = pollId;
+
         PollAudit storage audit = pollAudits[pollId];
         audit.coordinator = msg.sender;
         audit.poll = _poll;
@@ -699,7 +707,7 @@ contract MaciRLA is SnarkCommon, DomainObjs {
         uint256 _totalVotes,
         uint256 _pmBatchCount,
         uint256 _tvBatchCount,
-        uint256 _pmBatchSize,
+        uint256 /* _pmBatchSize */,
         uint256 _tvBatchSize
     ) internal pure returns (uint256 pmSamples, uint256 tvSamples) {
         if (_totalVotes == 0) return (0, 0);
@@ -708,19 +716,16 @@ contract MaciRLA is SnarkCommon, DomainObjs {
         if (_margin == 0) return (_pmBatchCount, _tvBatchCount);
 
         // Maximum samples: leave at least 1 unsampled batch when possible
-        uint256 pmMaxSamples = _pmBatchCount > 1 ? _pmBatchCount - 1 : _pmBatchCount;
         uint256 tvMaxSamples = _tvBatchCount > 1 ? _tvBatchCount - 1 : _tvBatchCount;
 
         // Minimum votes that must be changed to flip the result
         uint256 votesToFlip = _margin / 2 + 1;
 
-        // PM: how many batches must be corrupted to flip?
-        uint256 pmCorrupt = (votesToFlip + _pmBatchSize - 1) / _pmBatchSize;
-        if (pmCorrupt > _pmBatchCount) pmCorrupt = _pmBatchCount;
-        // K_pm = ceil(CONFIDENCE × N_pm / M_pm)
-        // Using CONFIDENCE_X1000 / 1000 for precision
-        pmSamples = (CONFIDENCE_X1000 * _pmBatchCount + pmCorrupt * 1000 - 1) / (pmCorrupt * 1000);
-        if (pmSamples > pmMaxSamples) pmSamples = pmMaxSamples;
+        // PM: Sequential dependency requires full verification
+        // PM batches form a commitment chain where each batch depends on the previous state
+        // Sampling intermediate batches would not detect manipulation in earlier batches
+        // Therefore, all PM batches must be verified
+        pmSamples = _pmBatchCount;
 
         // TV: how many batches must be corrupted to flip?
         uint256 tvCorrupt = (votesToFlip + _tvBatchSize - 1) / _tvBatchSize;

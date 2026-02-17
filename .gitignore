@@ -32,6 +32,72 @@ maci-test/typechain-types/
 
 # Local-only MACI test config / logs
 maci-test/deploy-config.json
+maci-test/deploy-config.json.backup
 maci-test/frontend/.env.local
 *.log
 start-wrapper.sh
+
+# Development/test API endpoints
+maci-test/frontend/pages/api/dev/
+
+# Research & Analysis (대외비)
+# Cost analysis reports
+*COST-ANALYSIS*.md
+*RLA-SAVINGS*.md
+*DESIGN-DECISION*.md
+*TOKEN-WEIGHTED*.md
+
+# Research documents
+*ANALYSIS*.md
+*REPORT*.md
+*VERIFICATION*.md
+*GUIDE*.md
+*REVIEW*.md
+*COMPLETION*.md
+PM-*.md
+TV-*.md
+
+# Charts and visualizations
+maci-test/charts/
+maci-test/*.png
+maci-test/*.jpg
+
+# Analysis data
+maci-test/voter-consensus-analysis.json
+maci-test/dispute-analysis-results.json
+maci-test/election-metadata.json
+
+# Python analysis environment
+maci-test/.venv/
+maci-test/__pycache__/
+*.pyc
+
+# Test and debug scripts
+maci-test/scripts/analyze-*.py
+maci-test/scripts/visualize-*.py
+maci-test/scripts/check-*.ts
+maci-test/scripts/test-*.ts
+maci-test/scripts/benchmark-*.ts
+maci-test/scripts/quick-*.ts
+maci-test/scripts/submit-*.ts
+maci-test/scripts/decode-*.ts
+maci-test/scripts/*-poll*.ts
+maci-test/scripts/e2e-*.sh
+
+# Root-level test/verification docs
+*TEST*.md
+*BUG*.md
+*FIX*.md
+*WORKFLOW*.md
+*CRITICAL*.md
+*ISSUES*.md
+*PROCEDURE*.md
+*UX*.md
+
+# Script helpers
+scripts/test-*.sh
+scripts/dev.sh
+scripts/stop.sh
+
+# Temporary/scratch directories
+stitch/
