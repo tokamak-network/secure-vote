@@ -23,3 +23,35 @@ cache/
 
 # OS
 .DS_Store
+
+# Research / paper files (confidential)
+papers/
+*.tex
+*.pdf
+*.log
+*.aux
+*.toc
+*.out
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+GAME-THEORY-ANALYSIS.md
+RLA-SAVINGS-FORMULA.md
+PM-SEQUENTIAL-DEPENDENCY.md
+PM-FULL-VERIFICATION-IMPACT.md
+COST-ANALYSIS-REPORT*.md
+FINAL-E2E-REPORT.md
+META-REVIEW.md
+CHARTS-GUIDE.md
+DESIGN-DECISION.md
+NAMING-ANALYSIS.md
+POLL3-COMPLETION.md
+TEST-FAILURE-ANALYSIS.md
+TOKEN-WEIGHTED-VOTING-EXPLAINED.md
+TV-SAMPLING-PRIVACY.md
+VERIFICATION-COMPLETE.md
+scripts/game-theory-simulation.py
+charts/game-theory-*.png
+experiments/results/real-data-summary.md
