@@ -5,11 +5,11 @@
     "pmBatches": 2,
     "tvBatches": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "fullMaciGas": "11255397",
-    "maciRlaGas": "4261578",
-    "savingsGas": "6993819",
-    "savingsPct": 62
+    "maciRlaGas": "3859479",
+    "savingsGas": "7395918",
+    "savingsPct": 65
   },
   {
     "voters": 10,
@@ -17,11 +17,11 @@
     "pmBatches": 2,
     "tvBatches": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "fullMaciGas": "11255397",
-    "maciRlaGas": "4261578",
-    "savingsGas": "6993819",
-    "savingsPct": 62
+    "maciRlaGas": "3859479",
+    "savingsGas": "7395918",
+    "savingsPct": 65
   },
   {
     "voters": 10,
@@ -29,11 +29,11 @@
     "pmBatches": 2,
     "tvBatches": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "fullMaciGas": "11255397",
-    "maciRlaGas": "4261578",
-    "savingsGas": "6993819",
-    "savingsPct": 62
+    "maciRlaGas": "3859479",
+    "savingsGas": "7395918",
+    "savingsPct": 65
   },
   {
     "voters": 10,
@@ -41,11 +41,11 @@
     "pmBatches": 2,
     "tvBatches": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "fullMaciGas": "11255397",
-    "maciRlaGas": "4261578",
-    "savingsGas": "6993819",
-    "savingsPct": 62
+    "maciRlaGas": "3859479",
+    "savingsGas": "7395918",
+    "savingsPct": 65
   },
   {
     "voters": 10,
@@ -76,24 +76,24 @@
     "marginPct": 80,
     "pmBatches": 10,
     "tvBatches": 26,
-    "pmSamples": 6,
+    "pmSamples": 10,
     "tvSamples": 8,
     "fullMaciGas": "23093313",
-    "maciRlaGas": "6963744",
-    "savingsGas": "16129569",
-    "savingsPct": 69
+    "maciRlaGas": "8861712",
+    "savingsGas": "14231601",
+    "savingsPct": 61
   },
   {
     "voters": 50,
     "marginPct": 60,
     "pmBatches": 10,
     "tvBatches": 26,
-    "pmSamples": 8,
+    "pmSamples": 10,
     "tvSamples": 10,
     "fullMaciGas": "23093313",
-    "maciRlaGas": "8716926",
-    "savingsGas": "14376387",
-    "savingsPct": 62
+    "maciRlaGas": "9665910",
+    "savingsGas": "13427403",
+    "savingsPct": 58
   },
   {
     "voters": 50,
@@ -101,11 +101,11 @@
     "pmBatches": 10,
     "tvBatches": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "fullMaciGas": "23093313",
-    "maciRlaGas": "16099494",
-    "savingsGas": "6993819",
-    "savingsPct": 30
+    "maciRlaGas": "15697395",
+    "savingsGas": "7395918",
+    "savingsPct": 32
   },
   {
     "voters": 50,
@@ -113,11 +113,11 @@
     "pmBatches": 10,
     "tvBatches": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "fullMaciGas": "23093313",
-    "maciRlaGas": "16099494",
-    "savingsGas": "6993819",
-    "savingsPct": 30
+    "maciRlaGas": "15697395",
+    "savingsGas": "7395918",
+    "savingsPct": 32
   },
   {
     "voters": 50,
@@ -125,11 +125,11 @@
     "pmBatches": 10,
     "tvBatches": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "fullMaciGas": "23093313",
-    "maciRlaGas": "16099494",
-    "savingsGas": "6993819",
-    "savingsPct": 30
+    "maciRlaGas": "15697395",
+    "savingsGas": "7395918",
+    "savingsPct": 32
   },
   {
     "voters": 50,
@@ -148,24 +148,24 @@
     "marginPct": 80,
     "pmBatches": 20,
     "tvBatches": 51,
-    "pmSamples": 7,
+    "pmSamples": 20,
     "tvSamples": 8,
     "fullMaciGas": "37890708",
-    "maciRlaGas": "7438236",
-    "savingsGas": "30452472",
-    "savingsPct": 80
+    "maciRlaGas": "13606632",
+    "savingsGas": "24284076",
+    "savingsPct": 64
   },
   {
     "voters": 100,
     "marginPct": 60,
     "pmBatches": 20,
     "tvBatches": 51,
-    "pmSamples": 9,
+    "pmSamples": 20,
     "tvSamples": 10,
     "fullMaciGas": "37890708",
-    "maciRlaGas": "9191418",
-    "savingsGas": "28699290",
-    "savingsPct": 75
+    "maciRlaGas": "14410830",
+    "savingsGas": "23479878",
+    "savingsPct": 61
   },
   {
     "voters": 100,
@@ -185,11 +185,11 @@
     "pmBatches": 20,
     "tvBatches": 51,
     "pmSamples": 20,
-    "tvSamples": 51,
+    "tvSamples": 50,
     "fullMaciGas": "37890708",
-    "maciRlaGas": "30896889",
-    "savingsGas": "6993819",
-    "savingsPct": 18
+    "maciRlaGas": "30494790",
+    "savingsGas": "7395918",
+    "savingsPct": 19
   },
   {
     "voters": 100,
@@ -197,11 +197,11 @@
     "pmBatches": 20,
     "tvBatches": 51,
     "pmSamples": 20,
-    "tvSamples": 51,
+    "tvSamples": 50,
     "fullMaciGas": "37890708",
-    "maciRlaGas": "30896889",
-    "savingsGas": "6993819",
-    "savingsPct": 18
+    "maciRlaGas": "30494790",
+    "savingsGas": "7395918",
+    "savingsPct": 19
   },
   {
     "voters": 100,
@@ -220,36 +220,36 @@
     "marginPct": 80,
     "pmBatches": 40,
     "tvBatches": 101,
-    "pmSamples": 8,
+    "pmSamples": 40,
     "tvSamples": 8,
     "fullMaciGas": "67485498",
-    "maciRlaGas": "7912728",
-    "savingsGas": "59572770",
-    "savingsPct": 88
+    "maciRlaGas": "23096472",
+    "savingsGas": "44389026",
+    "savingsPct": 65
   },
   {
     "voters": 200,
     "marginPct": 60,
     "pmBatches": 40,
     "tvBatches": 101,
-    "pmSamples": 10,
+    "pmSamples": 40,
     "tvSamples": 10,
     "fullMaciGas": "67485498",
-    "maciRlaGas": "9665910",
-    "savingsGas": "57819588",
-    "savingsPct": 85
+    "maciRlaGas": "23900670",
+    "savingsGas": "43584828",
+    "savingsPct": 64
   },
   {
     "voters": 200,
     "marginPct": 20,
     "pmBatches": 40,
     "tvBatches": 101,
-    "pmSamples": 24,
+    "pmSamples": 40,
     "tvSamples": 28,
     "fullMaciGas": "67485498",
-    "maciRlaGas": "23546580",
-    "savingsGas": "43938918",
-    "savingsPct": 65
+    "maciRlaGas": "31138452",
+    "savingsGas": "36347046",
+    "savingsPct": 53
   },
   {
     "voters": 200,
@@ -269,10 +269,10 @@
     "pmBatches": 40,
     "tvBatches": 101,
     "pmSamples": 40,
-    "tvSamples": 101,
+    "tvSamples": 100,
     "fullMaciGas": "67485498",
-    "maciRlaGas": "60491679",
-    "savingsGas": "6993819",
+    "maciRlaGas": "60089580",
+    "savingsGas": "7395918",
     "savingsPct": 10
   },
   {
@@ -292,48 +292,48 @@
     "marginPct": 80,
     "pmBatches": 100,
     "tvBatches": 251,
-    "pmSamples": 8,
+    "pmSamples": 100,
     "tvSamples": 8,
     "fullMaciGas": "156269868",
-    "maciRlaGas": "7912728",
-    "savingsGas": "148357140",
-    "savingsPct": 94
+    "maciRlaGas": "51565992",
+    "savingsGas": "104703876",
+    "savingsPct": 67
   },
   {
     "voters": 500,
     "marginPct": 60,
     "pmBatches": 100,
     "tvBatches": 251,
-    "pmSamples": 10,
+    "pmSamples": 100,
     "tvSamples": 10,
     "fullMaciGas": "156269868",
-    "maciRlaGas": "9665910",
-    "savingsGas": "146603958",
-    "savingsPct": 93
+    "maciRlaGas": "52370190",
+    "savingsGas": "103899678",
+    "savingsPct": 66
   },
   {
     "voters": 500,
     "marginPct": 20,
     "pmBatches": 100,
     "tvBatches": 251,
-    "pmSamples": 28,
+    "pmSamples": 100,
     "tvSamples": 29,
     "fullMaciGas": "156269868",
-    "maciRlaGas": "25846647",
-    "savingsGas": "130423221",
-    "savingsPct": 83
+    "maciRlaGas": "60010071",
+    "savingsGas": "96259797",
+    "savingsPct": 61
   },
   {
     "voters": 500,
     "marginPct": 10,
     "pmBatches": 100,
     "tvBatches": 251,
-    "pmSamples": 50,
+    "pmSamples": 100,
     "tvSamples": 58,
     "fullMaciGas": "156269868",
-    "maciRlaGas": "47946342",
-    "savingsGas": "108323526",
-    "savingsPct": 69
+    "maciRlaGas": "71670942",
+    "savingsGas": "84598926",
+    "savingsPct": 54
   },
   {
     "voters": 500,
@@ -341,10 +341,10 @@
     "pmBatches": 100,
     "tvBatches": 251,
     "pmSamples": 100,
-    "tvSamples": 251,
+    "tvSamples": 250,
     "fullMaciGas": "156269868",
-    "maciRlaGas": "149276049",
-    "savingsGas": "6993819",
+    "maciRlaGas": "148873950",
+    "savingsGas": "7395918",
     "savingsPct": 4
   },
   {
@@ -364,48 +364,48 @@
     "marginPct": 80,
     "pmBatches": 200,
     "tvBatches": 501,
-    "pmSamples": 8,
+    "pmSamples": 200,
     "tvSamples": 8,
     "fullMaciGas": "304243818",
-    "maciRlaGas": "7912728",
-    "savingsGas": "296331090",
-    "savingsPct": 97
+    "maciRlaGas": "99015192",
+    "savingsGas": "205228626",
+    "savingsPct": 67
   },
   {
     "voters": 1000,
     "marginPct": 60,
     "pmBatches": 200,
     "tvBatches": 501,
-    "pmSamples": 10,
+    "pmSamples": 200,
     "tvSamples": 10,
     "fullMaciGas": "304243818",
-    "maciRlaGas": "9665910",
-    "savingsGas": "294577908",
-    "savingsPct": 96
+    "maciRlaGas": "99819390",
+    "savingsGas": "204424428",
+    "savingsPct": 67
   },
   {
     "voters": 1000,
     "marginPct": 20,
     "pmBatches": 200,
     "tvBatches": 501,
-    "pmSamples": 29,
+    "pmSamples": 200,
     "tvSamples": 30,
     "fullMaciGas": "304243818",
-    "maciRlaGas": "26723238",
-    "savingsGas": "277520580",
-    "savingsPct": 91
+    "maciRlaGas": "107861370",
+    "savingsGas": "196382448",
+    "savingsPct": 64
   },
   {
     "voters": 1000,
     "marginPct": 10,
     "pmBatches": 200,
     "tvBatches": 501,
-    "pmSamples": 55,
+    "pmSamples": 200,
     "tvSamples": 58,
     "fullMaciGas": "304243818",
-    "maciRlaGas": "50318802",
-    "savingsGas": "253925016",
-    "savingsPct": 83
+    "maciRlaGas": "119120142",
+    "savingsGas": "185123676",
+    "savingsPct": 60
   },
   {
     "voters": 1000,

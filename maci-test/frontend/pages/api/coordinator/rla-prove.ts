@@ -4,10 +4,19 @@ import { publicClient, MACI_RLA_ABI, getAddresses } from '@/lib/server';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const PROOFS_DIR = path.resolve(process.cwd(), '../proofs-web');
-const STATUS_FILE = path.join(PROOFS_DIR, 'status.json');
-const PROVE_BATCHES_FILE = path.join(PROOFS_DIR, 'prove-batches.json');
 const PROJECT_ROOT = path.resolve(process.cwd(), '..');
+
+function getProofsDir(pollId: number | string): string {
+  return path.resolve(process.cwd(), `../proofs-web/poll-${pollId}`);
+}
+
+function getStatusFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'status.json');
+}
+
+function getProveBatchesFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'prove-batches.json');
+}
 
 /**
  * POST /api/coordinator/rla-prove
@@ -28,8 +37,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    if (fs.existsSync(STATUS_FILE)) {
-      const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+    const { pollId } = req.query;
+    const pollIdStr = pollId !== undefined ? pollId.toString() : '0';
+    const statusFile = getStatusFile(pollIdStr);
+
+    if (fs.existsSync(statusFile)) {
+      const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
       return res.status(200).json({
         success: true,
         proveStatus: status.proveStatus || 'not-started',
@@ -50,14 +63,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, error: 'pollId required' });
     }
 
-    const { maciRla } = getAddresses();
-    if (!maciRla) {
-      return res.status(500).json({ success: false, error: 'MaciRLA address not configured' });
+    const pollIdStr = pollId.toString();
+    const statusFile = getStatusFile(pollIdStr);
+    const proofsDir = getProofsDir(pollIdStr);
+    const proveBatchesFile = getProveBatchesFile(pollIdStr);
+
+    // Ensure poll-specific directory exists
+    if (!fs.existsSync(proofsDir)) {
+      fs.mkdirSync(proofsDir, { recursive: true });
+    }
+
+    const { maci, maciRla } = getAddresses();
+    if (!maciRla || !maci) {
+      return res.status(500).json({ success: false, error: 'Contract addresses not configured' });
     }
 
     // Check if already proving
-    if (fs.existsSync(STATUS_FILE)) {
-      const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+    if (fs.existsSync(statusFile)) {
+      const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
       if (status.proveStatus === 'proving') {
         return res.status(200).json({
           success: true,
@@ -69,19 +92,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // Get poll address from MACI Poll ID
+    const pollResult = await publicClient.readContract({
+      address: maci,
+      abi: [{ type: 'function', name: 'getPoll', inputs: [{ type: 'uint256' }], outputs: [{ type: 'address', name: 'poll' }, { type: 'address' }, { type: 'address' }], stateMutability: 'view' }],
+      functionName: 'getPoll',
+      args: [BigInt(pollId)],
+    } as any) as any;
+
+    const pollAddress = pollResult[0] || pollResult.poll;
+
+    // Convert MACI Poll address to RLA Poll ID
+    const rlaPollId = await publicClient.readContract({
+      address: maciRla,
+      abi: MACI_RLA_ABI,
+      functionName: 'pollToAuditId',
+      args: [pollAddress as `0x${string}`],
+    } as any) as bigint;
+
     // Read sampled batch indices from MaciRLA
     const [pmSamples, tvSamples] = await publicClient.readContract({
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'getSampleCounts',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any) as [bigint, bigint];
 
     const [pmIndices, tvIndices] = await publicClient.readContract({
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'getSelectedBatches',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any) as [bigint[], bigint[]];
 
     // Convert 1-based batch indices to 0-based file indices
@@ -89,13 +130,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const tvFileIndices = tvIndices.slice(0, Number(tvSamples)).map(i => Number(i) - 1);
 
     // Write prove-batches.json for the script to read
-    fs.writeFileSync(PROVE_BATCHES_FILE, JSON.stringify({
+    fs.writeFileSync(proveBatchesFile, JSON.stringify({
       pm: pmFileIndices,
       tv: tvFileIndices,
     }, null, 2));
 
-    // Spawn proof generation script
-    const cmd = `cd "${PROJECT_ROOT}" && npx hardhat run scripts/coordinator-prove-batch.ts --network localhost`;
+    // Spawn proof generation script with poll-specific directory
+    const cmd = `cd "${PROJECT_ROOT}" && OUTPUT_DIR="${proofsDir}" npx hardhat run scripts/coordinator-prove-batch.ts --network localhost`;
 
     exec(cmd, { maxBuffer: 10 * 1024 * 1024, timeout: 600000 }, (error, stdout, stderr) => {
       if (error) {

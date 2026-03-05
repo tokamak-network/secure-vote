@@ -39,6 +39,7 @@ export const MACI_RLA_ABI = parseAbi([
   'function getChallengeBondAmount(uint256 pollId) view returns (uint256 bond)',
   'function coordinatorStake() view returns (uint256)',
   'function CHALLENGE_PERIOD() view returns (uint256)',
+  'function pollToAuditId(address poll) view returns (uint256)',
   // Write
   'function commitResult(address poll, uint256[] pmCommitments, uint256[] tvCommitments, uint256 yesVotes, uint256 noVotes) payable',
   'function revealSample(uint256 pollId)',

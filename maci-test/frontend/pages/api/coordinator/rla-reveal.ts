@@ -24,10 +24,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, error: 'pollId required' });
     }
 
-    const { maciRla } = getAddresses();
-    if (!maciRla) {
-      return res.status(500).json({ success: false, error: 'MaciRLA address not configured' });
+    const { maci, maciRla } = getAddresses();
+    if (!maciRla || !maci) {
+      return res.status(500).json({ success: false, error: 'Contract addresses not configured' });
     }
+
+    // Get poll address from MACI Poll ID
+    const pollResult = await publicClient.readContract({
+      address: maci,
+      abi: [{ type: 'function', name: 'getPoll', inputs: [{ type: 'uint256' }], outputs: [{ type: 'address', name: 'poll' }, { type: 'address' }, { type: 'address' }], stateMutability: 'view' }],
+      functionName: 'getPoll',
+      args: [BigInt(pollId)],
+    } as any) as any;
+
+    const pollAddress = pollResult[0] || pollResult.poll;
+
+    // Convert MACI Poll address to RLA Poll ID
+    const rlaPollId = await publicClient.readContract({
+      address: maciRla,
+      abi: MACI_RLA_ABI,
+      functionName: 'pollToAuditId',
+      args: [pollAddress as `0x${string}`],
+    } as any) as bigint;
 
     // Mine blocks so blockhash(commitBlock + BLOCK_HASH_DELAY) is available
     await anvilMineBlocks(2);
@@ -36,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'revealSample',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any);
 
     await publicClient.waitForTransactionReceipt({ hash });
@@ -65,6 +83,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (err: any) {
     console.error('rla-reveal error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reveal sample',
+      details: err.message,
+      suggestion: 'Check that the commitment phase has completed and blocks have been mined',
+    });
   }
 }

@@ -25,17 +25,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, error: 'pollId required' });
     }
 
-    const { maciRla } = getAddresses();
-    if (!maciRla) {
-      return res.status(500).json({ success: false, error: 'MaciRLA address not configured' });
+    const { maci, maciRla } = getAddresses();
+    if (!maciRla || !maci) {
+      return res.status(500).json({ success: false, error: 'Contract addresses not configured' });
     }
+
+    // Get poll address from MACI Poll ID
+    const pollResult = await publicClient.readContract({
+      address: maci,
+      abi: [{ type: 'function', name: 'getPoll', inputs: [{ type: 'uint256' }], outputs: [{ type: 'address', name: 'poll' }, { type: 'address' }, { type: 'address' }], stateMutability: 'view' }],
+      functionName: 'getPoll',
+      args: [BigInt(pollId)],
+    } as any) as any;
+
+    const pollAddress = pollResult[0] || pollResult.poll;
+
+    // Convert MACI Poll address to RLA Poll ID
+    const rlaPollId = await publicClient.readContract({
+      address: maciRla,
+      abi: MACI_RLA_ABI,
+      functionName: 'pollToAuditId',
+      args: [pollAddress as `0x${string}`],
+    } as any) as bigint;
 
     // Read current phase
     const audit = await publicClient.readContract({
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'pollAudits',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any) as any;
     const currentPhase = Number(audit[22]);
 
@@ -47,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         address: maciRla,
         abi: MACI_RLA_ABI,
         functionName: 'finalizeSampling',
-        args: [BigInt(pollId)],
+        args: [rlaPollId],
       } as any);
       await publicClient.waitForTransactionReceipt({ hash });
       txHashes.push(hash);
@@ -61,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'finalize',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any);
     await publicClient.waitForTransactionReceipt({ hash });
     txHashes.push(hash);
@@ -71,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'pollAudits',
-      args: [BigInt(pollId)],
+      args: [rlaPollId],
     } as any) as any;
 
     res.status(200).json({
@@ -84,6 +102,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (err: any) {
     console.error('rla-finalize error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to finalize',
+      details: err.message,
+      suggestion: 'Check that all proofs have been submitted and verified',
+    });
   }
 }

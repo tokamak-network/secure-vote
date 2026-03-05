@@ -3,8 +3,13 @@ import { publicClient, walletClient, MACI_RLA_ABI, getAddresses } from '@/lib/se
 import * as path from 'path';
 import * as fs from 'fs';
 
-const PROOFS_DIR = path.resolve(process.cwd(), '../proofs-web');
-const COMMITMENTS_FILE = path.join(PROOFS_DIR, 'commitments.json');
+function getProofsDir(pollId: number | string): string {
+  return path.resolve(process.cwd(), `../proofs-web/poll-${pollId}`);
+}
+
+function getCommitmentsFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'commitments.json');
+}
 
 /**
  * POST /api/coordinator/rla-commit
@@ -25,20 +30,69 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { maciRla, poll } = getAddresses();
-    if (!maciRla || !poll) {
-      return res.status(500).json({ success: false, error: 'Contract addresses not configured' });
+    const { pollId } = req.body;
+    if (pollId === undefined) {
+      return res.status(400).json({ success: false, error: 'pollId required' });
     }
 
-    if (!fs.existsSync(COMMITMENTS_FILE)) {
-      return res.status(400).json({ success: false, error: 'commitments.json not found. Run Extract Commitments first.' });
+    const { maciRla } = getAddresses();
+    if (!maciRla) {
+      return res.status(500).json({ success: false, error: 'MaciRLA address not configured' });
     }
 
-    const commitmentsData = JSON.parse(fs.readFileSync(COMMITMENTS_FILE, 'utf8'));
+    // Get correct poll address for this pollId
+    const configPath = path.resolve(process.cwd(), '..', 'deploy-config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+    let pollAddress: `0x${string}`;
+    if (config.polls && config.polls[pollId.toString()]) {
+      pollAddress = config.polls[pollId.toString()].pollAddress;
+    } else if (pollId === 0 || pollId.toString() === config.pollId) {
+      pollAddress = config.pollAddress;
+    } else {
+      return res.status(500).json({ success: false, error: `Poll ${pollId} configuration not found` });
+    }
+
+    const commitmentsFile = getCommitmentsFile(pollId);
+
+    if (!fs.existsSync(commitmentsFile)) {
+      return res.status(400).json({
+        success: false,
+        error: `commitments.json not found for Poll #${pollId}. Run Extract Commitments first.`,
+        details: `Expected file: ${commitmentsFile}`,
+      });
+    }
+
+    const commitmentsData = JSON.parse(fs.readFileSync(commitmentsFile, 'utf8'));
     const pmCommitments = commitmentsData.pmCommitments.map((c: string) => BigInt(c));
     const tvCommitments = commitmentsData.tvCommitments.map((c: string) => BigInt(c));
     const yesVotes = BigInt(commitmentsData.yesVotes);
     const noVotes = BigInt(commitmentsData.noVotes);
+
+    // Check for suspicious 0 vs 0 result
+    const { POLL_ABI } = await import('@/lib/server');
+    const [, messages] = await publicClient.readContract({
+      address: pollAddress,
+      abi: POLL_ABI,
+      functionName: 'numSignUpsAndMessages',
+    } as any) as [bigint, bigint];
+
+    if (messages > 1n && yesVotes === 0n && noVotes === 0n) {
+      console.error('\n⚠️  WARNING: Committing 0 vs 0 result but poll has', messages.toString(), 'messages');
+      console.error('   This likely indicates a coordinator key mismatch.');
+      console.error('   Votes were encrypted with a different public key than the one being used for decryption.\n');
+
+      return res.status(400).json({
+        success: false,
+        error: `Refusing to commit suspicious result: 0 vs 0 with ${messages} messages. Check coordinator key mismatch.`,
+        details: {
+          messages: messages.toString(),
+          yesVotes: '0',
+          noVotes: '0',
+          hint: 'Votes may have been encrypted with wrong coordinator public key',
+        },
+      });
+    }
 
     const stake = await publicClient.readContract({
       address: maciRla,
@@ -50,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       address: maciRla,
       abi: MACI_RLA_ABI,
       functionName: 'commitResult',
-      args: [poll, pmCommitments, tvCommitments, yesVotes, noVotes],
+      args: [pollAddress, pmCommitments, tvCommitments, yesVotes, noVotes],
       value: stake as bigint,
     } as any);
 
@@ -73,6 +127,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (err: any) {
     console.error('rla-commit error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to commit result',
+      details: err.message,
+      suggestion: 'Check that commitments.json exists and wallet has sufficient ETH for stake',
+    });
   }
 }

@@ -146,17 +146,10 @@ export default function CoordinatorDashboard() {
   };
 
   const getPhaseDot = (phase: number) => {
-    if (phase === AuditPhase.Finalized) return 'bg-sv-emerald';
-    if (phase === AuditPhase.Rejected) return 'bg-sv-error';
-    if (phase === AuditPhase.None) return 'bg-sv-text-disabled';
-    return 'bg-sv-warning';
-  };
-
-  const getPhaseTagColor = (phase: number) => {
-    if (phase === AuditPhase.Finalized) return 'bg-sv-emerald/15 text-sv-emerald';
-    if (phase === AuditPhase.Rejected) return 'bg-sv-error/15 text-sv-error-light';
-    if (phase === AuditPhase.None) return 'bg-sv-surface-2 text-sv-text-muted';
-    return 'bg-sv-warning/15 text-sv-warning';
+    if (phase === AuditPhase.Finalized) return 'bg-emerald-500';
+    if (phase === AuditPhase.Rejected) return 'bg-rose-500';
+    if (phase === AuditPhase.None) return 'bg-zinc-600';
+    return 'bg-amber-500';
   };
 
   // Summary stats
@@ -168,38 +161,35 @@ export default function CoordinatorDashboard() {
     <Layout>
       <CoordinatorGuard>
         <div className="mb-8">
-          <h1 className="text-heading font-bold text-sv-text-primary mb-2">Coordinator</h1>
-          <p className="text-sm text-sv-text-muted">Manage elections, generate proofs, and submit RLA audits.</p>
+          <h1 className="text-4xl font-light text-white tracking-tight mb-2">Coordinator</h1>
+          <p className="text-base text-zinc-500">Manage elections, generate proofs, and submit RLA audits.</p>
         </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="sv-card p-5">
-            <div className="sv-stat-label">Total Elections</div>
-            <div className="sv-stat-value mt-1">{totalPolls}</div>
+          <div className="bg-surface-dark border border-border-dark p-5">
+            <div className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Total Elections</div>
+            <div className="text-xl font-mono text-white mt-1">{totalPolls}</div>
           </div>
-          <div className="sv-card p-5">
-            <div className="sv-stat-label">In Progress</div>
-            <div className="sv-stat-value mt-1 text-sv-warning">{activePolls}</div>
+          <div className="bg-surface-dark border border-border-dark p-5">
+            <div className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">In Progress</div>
+            <div className="text-xl font-mono text-amber-500 mt-1">{activePolls}</div>
           </div>
-          <div className="sv-card p-5">
-            <div className="sv-stat-label">Finalized</div>
-            <div className="sv-stat-value mt-1 text-sv-emerald">{finalizedPolls}</div>
+          <div className="bg-surface-dark border border-border-dark p-5">
+            <div className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">Finalized</div>
+            <div className="text-xl font-mono text-emerald-500 mt-1">{finalizedPolls}</div>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 px-5 py-4 bg-sv-error/10 text-sv-error-light text-sm border border-sv-error/20 rounded-lg flex items-start gap-3">
-            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
+          <div className="mb-6 px-5 py-4 bg-rose-950/20 text-rose-400 text-sm border border-rose-500/20 flex items-start gap-3">
             {error}
           </div>
         )}
 
         {loading ? (
           <div className="py-24 text-center">
-            <div className="inline-flex items-center gap-3 text-sv-text-muted text-sm">
+            <div className="inline-flex items-center gap-3 text-zinc-500 text-sm">
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -209,15 +199,15 @@ export default function CoordinatorDashboard() {
           </div>
         ) : polls.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-sv-text-muted text-sm mb-2">No elections found</p>
-            <p className="text-sv-text-disabled text-xs">
-              Create an election at <Link href="/elections/create" className="text-sv-accent hover:text-sv-accent-hover transition-colors">/elections/create</Link>
+            <p className="text-zinc-500 text-base mb-2">No elections found</p>
+            <p className="text-zinc-600 text-sm">
+              Create an election at <Link href="/elections/create" className="text-accent-blue hover:text-blue-400 transition-colors">/elections/create</Link>
             </p>
           </div>
         ) : (
-          <div className="sv-card overflow-hidden">
+          <div className="bg-surface-dark border border-border-dark overflow-hidden">
             {/* Table header */}
-            <div className="px-5 py-3 border-b border-sv-border grid grid-cols-7 gap-3 text-2xs text-sv-text-muted font-medium uppercase tracking-wider">
+            <div className="px-5 py-3 border-b border-border-dark grid grid-cols-7 gap-3 text-xs text-zinc-600 font-normal uppercase tracking-wider">
               <div>Poll</div>
               <div>Phase</div>
               <div>Messages</div>
@@ -230,39 +220,37 @@ export default function CoordinatorDashboard() {
             {polls.map((poll) => (
               <div
                 key={poll.id}
-                className="px-5 py-3.5 border-b border-sv-border-subtle last:border-b-0 grid grid-cols-7 gap-3 text-sm items-center
-                  hover:bg-sv-surface-hover transition-colors group"
+                className="px-5 py-3.5 border-b border-border-dark last:border-b-0 grid grid-cols-7 gap-3 text-sm items-center
+                  hover:bg-zinc-900/50 transition-colors group"
               >
                 <div>
-                  <div className="text-sv-text-primary font-mono text-xs font-medium">#{poll.id}</div>
-                  <div className="text-2xs text-sv-text-disabled truncate">{poll.name}</div>
+                  <div className="text-white font-mono text-xs font-medium">#{poll.id}</div>
+                  <div className="text-xs text-zinc-600 truncate">{poll.name}</div>
                 </div>
-                <div>
-                  <span className={`sv-tag ${getPhaseTagColor(poll.phase)}`}>
-                    <span className={`sv-badge-dot ${getPhaseDot(poll.phase)}`} />
-                    {getPhaseLabel(poll.phase)}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${getPhaseDot(poll.phase)}`}></span>
+                  <span className="text-xs text-zinc-400">{getPhaseLabel(poll.phase)}</span>
                 </div>
-                <div className="text-sv-text-secondary text-xs">{poll.messageCount}</div>
-                <div className="text-sv-text-secondary text-xs">
+                <div className="text-zinc-300 text-xs">{poll.messageCount}</div>
+                <div className="text-zinc-300 text-xs">
                   {poll.phase > AuditPhase.None
                     ? `${poll.yesVotes}/${poll.noVotes}`
-                    : <span className="text-sv-text-disabled">&mdash;</span>}
+                    : <span className="text-zinc-600">&mdash;</span>}
                 </div>
-                <div className="text-sv-text-secondary text-xs font-mono">
+                <div className="text-zinc-300 text-xs font-mono">
                   {poll.pmSampleCount > 0
                     ? `${poll.pmProofsVerified}/${poll.pmSampleCount}`
-                    : <span className="text-sv-text-disabled">&mdash;</span>}
+                    : <span className="text-zinc-600">&mdash;</span>}
                 </div>
-                <div className="text-sv-text-secondary text-xs font-mono">
+                <div className="text-zinc-300 text-xs font-mono">
                   {poll.tvSampleCount > 0
                     ? `${poll.tvProofsVerified}/${poll.tvSampleCount}`
-                    : <span className="text-sv-text-disabled">&mdash;</span>}
+                    : <span className="text-zinc-600">&mdash;</span>}
                 </div>
                 <div>
                   <Link
                     href={`/coordinator/${poll.id}`}
-                    className="text-xs text-sv-accent hover:text-sv-accent-hover transition-colors opacity-70 group-hover:opacity-100"
+                    className="text-xs text-accent-blue hover:text-blue-400 transition-colors opacity-70 group-hover:opacity-100"
                   >
                     Manage
                   </Link>

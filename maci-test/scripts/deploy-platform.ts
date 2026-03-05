@@ -149,6 +149,7 @@ async function main() {
     `NEXT_PUBLIC_VK_REGISTRY_ADDRESS=${await vkRegistryContract.getAddress()}`,
     `NEXT_PUBLIC_POLL_ADDRESS=${pollContracts.poll}`,
     `NEXT_PUBLIC_COORDINATOR_PUB_KEY=${coordinatorKeypair.pubKey.serialize()}`,
+    `COORDINATOR_PASSWORD=test123`,
   ].join("\n");
 
   const envPath = path.resolve(__dirname, "../frontend/.env.local");

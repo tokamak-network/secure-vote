@@ -19,7 +19,8 @@ import * as fs from "fs";
 // @ts-ignore
 import * as snarkjs from "snarkjs";
 
-const OUTPUT_DIR = path.resolve(__dirname, "../proofs-web");
+// Use OUTPUT_DIR from environment if set, otherwise default
+const OUTPUT_DIR = process.env.OUTPUT_DIR || path.resolve(__dirname, "../proofs-web");
 const STATUS_FILE = path.join(OUTPUT_DIR, "status.json");
 const PROVE_BATCHES_FILE = path.join(OUTPUT_DIR, "prove-batches.json");
 

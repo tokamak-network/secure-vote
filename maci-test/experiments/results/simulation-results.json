@@ -8,10 +8,10 @@
     "pmBatchCount": 2,
     "tvBatchCount": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "totalBatches": 8,
-    "totalSamples": 8,
-    "savingsPct": 0
+    "totalSamples": 7,
+    "savingsPct": 13
   },
   {
     "voters": 10,
@@ -22,10 +22,10 @@
     "pmBatchCount": 2,
     "tvBatchCount": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "totalBatches": 8,
-    "totalSamples": 8,
-    "savingsPct": 0
+    "totalSamples": 7,
+    "savingsPct": 13
   },
   {
     "voters": 10,
@@ -36,10 +36,10 @@
     "pmBatchCount": 2,
     "tvBatchCount": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "totalBatches": 8,
-    "totalSamples": 8,
-    "savingsPct": 0
+    "totalSamples": 7,
+    "savingsPct": 13
   },
   {
     "voters": 10,
@@ -50,10 +50,10 @@
     "pmBatchCount": 2,
     "tvBatchCount": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "totalBatches": 8,
-    "totalSamples": 8,
-    "savingsPct": 0
+    "totalSamples": 7,
+    "savingsPct": 13
   },
   {
     "voters": 10,
@@ -64,10 +64,10 @@
     "pmBatchCount": 2,
     "tvBatchCount": 6,
     "pmSamples": 2,
-    "tvSamples": 6,
+    "tvSamples": 5,
     "totalBatches": 8,
-    "totalSamples": 8,
-    "savingsPct": 0
+    "totalSamples": 7,
+    "savingsPct": 13
   },
   {
     "voters": 10,
@@ -105,11 +105,11 @@
     "marginPct": 80,
     "pmBatchCount": 10,
     "tvBatchCount": 26,
-    "pmSamples": 6,
+    "pmSamples": 10,
     "tvSamples": 8,
     "totalBatches": 36,
-    "totalSamples": 14,
-    "savingsPct": 61
+    "totalSamples": 18,
+    "savingsPct": 50
   },
   {
     "voters": 50,
@@ -119,11 +119,11 @@
     "marginPct": 60,
     "pmBatchCount": 10,
     "tvBatchCount": 26,
-    "pmSamples": 8,
+    "pmSamples": 10,
     "tvSamples": 10,
     "totalBatches": 36,
-    "totalSamples": 18,
-    "savingsPct": 50
+    "totalSamples": 20,
+    "savingsPct": 44
   },
   {
     "voters": 50,
@@ -148,10 +148,10 @@
     "pmBatchCount": 10,
     "tvBatchCount": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "totalBatches": 36,
-    "totalSamples": 36,
-    "savingsPct": 0
+    "totalSamples": 35,
+    "savingsPct": 3
   },
   {
     "voters": 50,
@@ -162,10 +162,10 @@
     "pmBatchCount": 10,
     "tvBatchCount": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "totalBatches": 36,
-    "totalSamples": 36,
-    "savingsPct": 0
+    "totalSamples": 35,
+    "savingsPct": 3
   },
   {
     "voters": 50,
@@ -176,10 +176,10 @@
     "pmBatchCount": 10,
     "tvBatchCount": 26,
     "pmSamples": 10,
-    "tvSamples": 26,
+    "tvSamples": 25,
     "totalBatches": 36,
-    "totalSamples": 36,
-    "savingsPct": 0
+    "totalSamples": 35,
+    "savingsPct": 3
   },
   {
     "voters": 50,
@@ -203,11 +203,11 @@
     "marginPct": 80,
     "pmBatchCount": 20,
     "tvBatchCount": 51,
-    "pmSamples": 7,
+    "pmSamples": 20,
     "tvSamples": 8,
     "totalBatches": 71,
-    "totalSamples": 15,
-    "savingsPct": 79
+    "totalSamples": 28,
+    "savingsPct": 61
   },
   {
     "voters": 100,
@@ -217,11 +217,11 @@
     "marginPct": 60,
     "pmBatchCount": 20,
     "tvBatchCount": 51,
-    "pmSamples": 9,
+    "pmSamples": 20,
     "tvSamples": 10,
     "totalBatches": 71,
-    "totalSamples": 19,
-    "savingsPct": 73
+    "totalSamples": 30,
+    "savingsPct": 58
   },
   {
     "voters": 100,
@@ -231,11 +231,11 @@
     "marginPct": 40,
     "pmBatchCount": 20,
     "tvBatchCount": 51,
-    "pmSamples": 12,
+    "pmSamples": 20,
     "tvSamples": 14,
     "totalBatches": 71,
-    "totalSamples": 26,
-    "savingsPct": 63
+    "totalSamples": 34,
+    "savingsPct": 52
   },
   {
     "voters": 100,
@@ -260,10 +260,10 @@
     "pmBatchCount": 20,
     "tvBatchCount": 51,
     "pmSamples": 20,
-    "tvSamples": 51,
+    "tvSamples": 50,
     "totalBatches": 71,
-    "totalSamples": 71,
-    "savingsPct": 0
+    "totalSamples": 70,
+    "savingsPct": 1
   },
   {
     "voters": 100,
@@ -274,10 +274,10 @@
     "pmBatchCount": 20,
     "tvBatchCount": 51,
     "pmSamples": 20,
-    "tvSamples": 51,
+    "tvSamples": 50,
     "totalBatches": 71,
-    "totalSamples": 71,
-    "savingsPct": 0
+    "totalSamples": 70,
+    "savingsPct": 1
   },
   {
     "voters": 100,
@@ -301,11 +301,11 @@
     "marginPct": 80,
     "pmBatchCount": 40,
     "tvBatchCount": 101,
-    "pmSamples": 8,
+    "pmSamples": 40,
     "tvSamples": 8,
     "totalBatches": 141,
-    "totalSamples": 16,
-    "savingsPct": 89
+    "totalSamples": 48,
+    "savingsPct": 66
   },
   {
     "voters": 200,
@@ -315,11 +315,11 @@
     "marginPct": 60,
     "pmBatchCount": 40,
     "tvBatchCount": 101,
-    "pmSamples": 10,
+    "pmSamples": 40,
     "tvSamples": 10,
     "totalBatches": 141,
-    "totalSamples": 20,
-    "savingsPct": 86
+    "totalSamples": 50,
+    "savingsPct": 65
   },
   {
     "voters": 200,
@@ -329,11 +329,11 @@
     "marginPct": 40,
     "pmBatchCount": 40,
     "tvBatchCount": 101,
-    "pmSamples": 14,
+    "pmSamples": 40,
     "tvSamples": 15,
     "totalBatches": 141,
-    "totalSamples": 29,
-    "savingsPct": 79
+    "totalSamples": 55,
+    "savingsPct": 61
   },
   {
     "voters": 200,
@@ -343,11 +343,11 @@
     "marginPct": 20,
     "pmBatchCount": 40,
     "tvBatchCount": 101,
-    "pmSamples": 24,
+    "pmSamples": 40,
     "tvSamples": 28,
     "totalBatches": 141,
-    "totalSamples": 52,
-    "savingsPct": 63
+    "totalSamples": 68,
+    "savingsPct": 52
   },
   {
     "voters": 200,
@@ -372,10 +372,10 @@
     "pmBatchCount": 40,
     "tvBatchCount": 101,
     "pmSamples": 40,
-    "tvSamples": 101,
+    "tvSamples": 100,
     "totalBatches": 141,
-    "totalSamples": 141,
-    "savingsPct": 0
+    "totalSamples": 140,
+    "savingsPct": 1
   },
   {
     "voters": 200,
@@ -399,11 +399,11 @@
     "marginPct": 80,
     "pmBatchCount": 100,
     "tvBatchCount": 251,
-    "pmSamples": 8,
+    "pmSamples": 100,
     "tvSamples": 8,
     "totalBatches": 351,
-    "totalSamples": 16,
-    "savingsPct": 95
+    "totalSamples": 108,
+    "savingsPct": 69
   },
   {
     "voters": 500,
@@ -413,11 +413,11 @@
     "marginPct": 60,
     "pmBatchCount": 100,
     "tvBatchCount": 251,
-    "pmSamples": 10,
+    "pmSamples": 100,
     "tvSamples": 10,
     "totalBatches": 351,
-    "totalSamples": 20,
-    "savingsPct": 94
+    "totalSamples": 110,
+    "savingsPct": 69
   },
   {
     "voters": 500,
@@ -427,11 +427,11 @@
     "marginPct": 40,
     "pmBatchCount": 100,
     "tvBatchCount": 251,
-    "pmSamples": 15,
+    "pmSamples": 100,
     "tvSamples": 15,
     "totalBatches": 351,
-    "totalSamples": 30,
-    "savingsPct": 91
+    "totalSamples": 115,
+    "savingsPct": 67
   },
   {
     "voters": 500,
@@ -441,11 +441,11 @@
     "marginPct": 20,
     "pmBatchCount": 100,
     "tvBatchCount": 251,
-    "pmSamples": 28,
+    "pmSamples": 100,
     "tvSamples": 29,
     "totalBatches": 351,
-    "totalSamples": 57,
-    "savingsPct": 84
+    "totalSamples": 129,
+    "savingsPct": 63
   },
   {
     "voters": 500,
@@ -455,11 +455,11 @@
     "marginPct": 10,
     "pmBatchCount": 100,
     "tvBatchCount": 251,
-    "pmSamples": 50,
+    "pmSamples": 100,
     "tvSamples": 58,
     "totalBatches": 351,
-    "totalSamples": 108,
-    "savingsPct": 69
+    "totalSamples": 158,
+    "savingsPct": 55
   },
   {
     "voters": 500,
@@ -470,9 +470,9 @@
     "pmBatchCount": 100,
     "tvBatchCount": 251,
     "pmSamples": 100,
-    "tvSamples": 251,
+    "tvSamples": 250,
     "totalBatches": 351,
-    "totalSamples": 351,
+    "totalSamples": 350,
     "savingsPct": 0
   },
   {
@@ -497,11 +497,11 @@
     "marginPct": 80,
     "pmBatchCount": 200,
     "tvBatchCount": 501,
-    "pmSamples": 8,
+    "pmSamples": 200,
     "tvSamples": 8,
     "totalBatches": 701,
-    "totalSamples": 16,
-    "savingsPct": 98
+    "totalSamples": 208,
+    "savingsPct": 70
   },
   {
     "voters": 1000,
@@ -511,11 +511,11 @@
     "marginPct": 60,
     "pmBatchCount": 200,
     "tvBatchCount": 501,
-    "pmSamples": 10,
+    "pmSamples": 200,
     "tvSamples": 10,
     "totalBatches": 701,
-    "totalSamples": 20,
-    "savingsPct": 97
+    "totalSamples": 210,
+    "savingsPct": 70
   },
   {
     "voters": 1000,
@@ -525,11 +525,11 @@
     "marginPct": 40,
     "pmBatchCount": 200,
     "tvBatchCount": 501,
-    "pmSamples": 15,
+    "pmSamples": 200,
     "tvSamples": 15,
     "totalBatches": 701,
-    "totalSamples": 30,
-    "savingsPct": 96
+    "totalSamples": 215,
+    "savingsPct": 69
   },
   {
     "voters": 1000,
@@ -539,11 +539,11 @@
     "marginPct": 20,
     "pmBatchCount": 200,
     "tvBatchCount": 501,
-    "pmSamples": 29,
+    "pmSamples": 200,
     "tvSamples": 30,
     "totalBatches": 701,
-    "totalSamples": 59,
-    "savingsPct": 92
+    "totalSamples": 230,
+    "savingsPct": 67
   },
   {
     "voters": 1000,
@@ -553,11 +553,11 @@
     "marginPct": 10,
     "pmBatchCount": 200,
     "tvBatchCount": 501,
-    "pmSamples": 55,
+    "pmSamples": 200,
     "tvSamples": 58,
     "totalBatches": 701,
-    "totalSamples": 113,
-    "savingsPct": 84
+    "totalSamples": 258,
+    "savingsPct": 63
   },
   {
     "voters": 1000,

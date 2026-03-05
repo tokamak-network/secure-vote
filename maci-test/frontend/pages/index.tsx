@@ -101,6 +101,7 @@ export default function Home() {
           yesVotes,
           noVotes,
           endTime: 0,
+          rlaPollId: undefined,
           rlaProgress: {
             pmVerified: pmProofsVerified,
             pmTotal: pmSampleCount,
@@ -110,37 +111,61 @@ export default function Home() {
         });
       }
 
-      // Also load any RLA audits
+      // Also load any RLA audits and map them to MACI polls
       if (maciRlaAddress && rlaCount > 0n) {
-        for (let i = 0; i < Number(rlaCount); i++) {
+        for (let rlaPollId = 0; rlaPollId < Number(rlaCount); rlaPollId++) {
           try {
             const audit = await publicClient.readContract({
               address: maciRlaAddress,
               abi: MACI_RLA_ABI,
               functionName: 'pollAudits',
-              args: [BigInt(i)],
+              args: [BigInt(rlaPollId)],
             } as any) as any;
 
             const phase = Number(audit[22]);
             if (phase > 0) {
-              const auditYes = Number(audit[3]);
-              const auditNo = Number(audit[4]);
-              let auditStatus: ElectionStatus = 'auditing';
-              if (phase === AuditPhase.Finalized) auditStatus = 'finalized';
-              else if (phase === AuditPhase.Rejected) auditStatus = 'rejected';
+              // Get the poll address from audit
+              const pollAddress = audit[1];
 
-              const existingIdx = items.findIndex(e => e.id === i);
-              if (existingIdx >= 0) {
-                items[existingIdx].status = auditStatus;
-                items[existingIdx].yesVotes = auditYes;
-                items[existingIdx].noVotes = auditNo;
-                items[existingIdx].voterCount = auditYes + auditNo;
-                items[existingIdx].rlaProgress = {
-                  pmVerified: Number(audit[13]),
-                  pmTotal: Number(audit[11]),
-                  tvVerified: Number(audit[14]),
-                  tvTotal: Number(audit[12]),
-                };
+              // Find the MACI Poll ID for this poll address
+              let maciPollId = -1;
+              for (let i = 0; i < Number(maciPollCount); i++) {
+                try {
+                  const pollInfo = await publicClient.readContract({
+                    address: maciAddress,
+                    abi: MACI_ABI,
+                    functionName: 'getPoll',
+                    args: [BigInt(i)],
+                  } as any) as any;
+                  const addr = pollInfo[0] || pollInfo.poll;
+                  if (addr && addr.toLowerCase() === pollAddress.toLowerCase()) {
+                    maciPollId = i;
+                    break;
+                  }
+                } catch {}
+              }
+
+              if (maciPollId >= 0) {
+                const auditYes = Number(audit[3]);
+                const auditNo = Number(audit[4]);
+                let auditStatus: ElectionStatus = 'auditing';
+                if (phase === AuditPhase.Finalized) auditStatus = 'finalized';
+                else if (phase === AuditPhase.Rejected) auditStatus = 'rejected';
+
+                const existingIdx = items.findIndex(e => e.id === maciPollId);
+                if (existingIdx >= 0) {
+                  items[existingIdx].status = auditStatus;
+                  items[existingIdx].yesVotes = auditYes;
+                  items[existingIdx].noVotes = auditNo;
+                  items[existingIdx].voterCount = auditYes + auditNo;
+                  items[existingIdx].rlaPollId = rlaPollId;
+                  items[existingIdx].rlaProgress = {
+                    pmVerified: Number(audit[13]),
+                    pmTotal: Number(audit[11]),
+                    tvVerified: Number(audit[14]),
+                    tvTotal: Number(audit[12]),
+                  };
+                }
               }
             }
           } catch {}
@@ -157,44 +182,24 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Hero section */}
-      <div className="mb-10">
-        <div className="flex items-center gap-3 mb-3">
-          <svg className="w-8 h-8 text-sv-accent" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.4 9.36-7 10.5-3.6-1.14-7-5.67-7-10.5V6.3l7-3.12z"/>
-            <path d="M10 15.5l-3.5-3.5 1.41-1.41L10 12.67l5.59-5.59L17 8.5l-7 7z"/>
-          </svg>
-          <h1 className="text-display font-bold text-sv-text-primary">Elections</h1>
-        </div>
-        <p className="text-base text-sv-text-muted max-w-lg">
-          MACI-encrypted voting with zero-knowledge proofs and risk-limiting audits.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-sm text-sv-text-muted">
-          {!loading && elections.length > 0 && `${elections.length} election${elections.length !== 1 ? 's' : ''}`}
-        </div>
-        <Link href="/elections/create" className="sv-btn-primary flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          New Election
+      <header className="flex items-end justify-between mb-12">
+        <h1 className="text-4xl font-light text-white tracking-tight">
+          Elections
+        </h1>
+        <Link href="/elections/create" className="text-base font-normal text-accent-blue hover:text-blue-400 transition-colors duration-200">
+          + New
         </Link>
-      </div>
+      </header>
 
       {error && (
-        <div className="mb-6 px-5 py-4 bg-sv-error/10 text-sv-error-light text-sm border border-sv-error/20 rounded-lg flex items-start gap-3">
-          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
+        <div className="mb-6 px-5 py-4 bg-rose-950/20 text-rose-400 text-sm border border-rose-500/20 flex items-start gap-3">
           {error}
         </div>
       )}
 
       {loading ? (
         <div className="py-24 text-center">
-          <div className="inline-flex items-center gap-3 text-sv-text-muted text-sm">
+          <div className="inline-flex items-center gap-3 text-zinc-500 text-sm">
             <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -204,19 +209,30 @@ export default function Home() {
         </div>
       ) : elections.length === 0 ? (
         <div className="py-24 text-center">
-          <svg className="w-16 h-16 text-sv-text-disabled mx-auto mb-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.4 9.36-7 10.5-3.6-1.14-7-5.67-7-10.5V6.3l7-3.12z"/>
-          </svg>
-          <p className="text-sv-text-muted text-sm mb-2">No elections yet</p>
-          <p className="text-sv-text-disabled text-xs">
-            Deploy the platform and create an election to get started.
-          </p>
+          <div className="text-zinc-500 text-sm mb-4">No elections yet</div>
+          <Link
+            href="/elections/create"
+            className="inline-flex items-center gap-2 text-accent-blue hover:text-blue-400 text-sm transition-colors duration-200"
+          >
+            Create your first election
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </Link>
         </div>
       ) : (
-        <div className="space-y-0">
-          {elections.map((election) => (
-            <ElectionCard key={election.id} election={election} />
-          ))}
+        <div className="w-full">
+          <div className="hidden md:grid grid-cols-12 gap-8 px-4 pb-4 text-xs font-normal text-zinc-600 uppercase tracking-wider border-b border-border-dark">
+            <div className="col-span-5">Name</div>
+            <div className="col-span-3">Category</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-2 text-right">Votes</div>
+          </div>
+          <div className="flex flex-col">
+            {elections.map((election) => (
+              <ElectionCard key={election.id} election={election} />
+            ))}
+          </div>
         </div>
       )}
     </Layout>

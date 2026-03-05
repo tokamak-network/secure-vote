@@ -28,7 +28,8 @@ import { Poll__factory, AccQueueQuinaryMaci__factory } from "maci-contracts";
 import type { Poll as PollContract, AccQueue } from "maci-contracts";
 import { Keypair, PrivKey } from "maci-domainobjs";
 
-const OUTPUT_DIR = path.resolve(__dirname, "../proofs-web");
+// Use OUTPUT_DIR from environment if set, otherwise default
+const OUTPUT_DIR = process.env.OUTPUT_DIR || path.resolve(__dirname, "../proofs-web");
 const TALLY_FILE = path.join(OUTPUT_DIR, "tally.json");
 const STATUS_FILE = path.join(OUTPUT_DIR, "status.json");
 const COMMITMENTS_FILE = path.join(OUTPUT_DIR, "commitments.json");
@@ -44,8 +45,30 @@ async function main() {
     throw new Error(`deploy-config.json not found at ${CONFIG_FILE}`);
   }
   const config = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
-  const { maciAddress, pollAddress, coordinatorPrivKey, pollId: pollIdStr } = config;
+
+  // Get pollId from query parameter or environment
+  let pollIdStr = process.env.POLL_ID || config.pollId || "0";
   const pollId = BigInt(pollIdStr);
+
+  // Get coordinator key for this specific poll
+  let coordinatorPrivKey: string;
+  let pollAddress: string;
+  const maciAddress = config.maciAddress;
+
+  if (config.polls && config.polls[pollIdStr]) {
+    // Multi-poll setup
+    const pollConfig = config.polls[pollIdStr];
+    coordinatorPrivKey = pollConfig.coordinatorPrivKey;
+    pollAddress = pollConfig.pollAddress;
+    console.log(`  Using Poll #${pollIdStr} config`);
+  } else if (pollIdStr === "0" || pollIdStr === config.pollId) {
+    // Legacy single-poll setup (Poll #0)
+    coordinatorPrivKey = config.coordinatorPrivKey;
+    pollAddress = config.pollAddress;
+    console.log(`  Using legacy Poll #0 config`);
+  } else {
+    throw new Error(`Poll ${pollIdStr} not found in deploy-config.json`);
+  }
 
   // Clean + create output dir
   if (fs.existsSync(OUTPUT_DIR)) {
@@ -158,6 +181,37 @@ async function main() {
   const tallyResults = poll.tallyResult.map((r: bigint) => r.toString());
   const yesVotes = tallyResults[1] || "0";
   const noVotes = tallyResults[0] || "0";
+
+  // Check for encryption key mismatch
+  const [signups, messages] = await pollContract.numSignUpsAndMessages();
+  const totalVotes = BigInt(yesVotes) + BigInt(noVotes);
+  const totalSpent = poll.totalSpentVoiceCredits;
+
+  if (Number(messages) > 1 && totalVotes === 0n && totalSpent === 0n) {
+    console.error("\n❌ ═══════════════════════════════════════════════════════════");
+    console.error("   CRITICAL ERROR: VOTE DECRYPTION FAILED");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error(`   Poll has ${messages} messages but tally is 0 vs 0`);
+    console.error(`   This indicates a COORDINATOR KEY MISMATCH:`);
+    console.error(`   - Votes were encrypted with a different coordinator public key`);
+    console.error(`   - Current coordinator private key cannot decrypt the votes`);
+    console.error("");
+    console.error("   Expected coordinator key for Poll #" + pollId + ":");
+    console.error(`   ${coordKeypair.pubKey.serialize()}`);
+    console.error("");
+    console.error("   Check that votes were encrypted with THIS coordinator's public key.");
+    console.error("   If you created a new poll, votes must use the NEW coordinator key,");
+    console.error("   not the key from Poll #0.");
+    console.error("═══════════════════════════════════════════════════════════\n");
+
+    writeStatus("error", {
+      error: "COORDINATOR_KEY_MISMATCH",
+      message: `Poll has ${messages} messages but tally is 0 vs 0. Votes encrypted with wrong coordinator key.`,
+      expectedKey: coordKeypair.pubKey.serialize(),
+    });
+
+    throw new Error("Vote decryption failed - coordinator key mismatch");
+  }
 
   const tallyData = {
     results: {

@@ -12,6 +12,7 @@ export interface ElectionData {
   yesVotes: number;
   noVotes: number;
   endTime: number;
+  rlaPollId?: number;
   rlaProgress?: {
     pmVerified: number;
     pmTotal: number;
@@ -20,12 +21,12 @@ export interface ElectionData {
   };
 }
 
-const STATUS_CONFIG: Record<ElectionStatus, { dot: string; bg: string; text: string; label: string }> = {
-  new: { dot: 'bg-sv-accent', bg: 'bg-sv-accent/10', text: 'text-sv-accent', label: 'New' },
-  active: { dot: 'bg-sv-emerald', bg: 'bg-sv-emerald/10', text: 'text-sv-emerald', label: 'Active' },
-  auditing: { dot: 'bg-sv-warning', bg: 'bg-sv-warning/10', text: 'text-sv-warning', label: 'Auditing' },
-  finalized: { dot: 'bg-sv-emerald', bg: 'bg-sv-emerald/10', text: 'text-sv-emerald', label: 'Finalized' },
-  rejected: { dot: 'bg-sv-error', bg: 'bg-sv-error/10', text: 'text-sv-error-light', label: 'Rejected' },
+const STATUS_CONFIG: Record<ElectionStatus, { dot: string; text: string; label: string }> = {
+  new: { dot: 'bg-blue-500', text: 'text-zinc-400', label: 'New' },
+  active: { dot: 'bg-emerald-500', text: 'text-zinc-400', label: 'Active' },
+  auditing: { dot: 'bg-amber-500', text: 'text-zinc-400', label: 'Auditing' },
+  finalized: { dot: 'bg-emerald-500', text: 'text-zinc-400', label: 'Finalized' },
+  rejected: { dot: 'bg-rose-500', text: 'text-zinc-400', label: 'Rejected' },
 };
 
 export default function ElectionCard({ election }: { election: ElectionData }) {
@@ -36,7 +37,7 @@ export default function ElectionCard({ election }: { election: ElectionData }) {
   const minutes = Math.floor((remaining % 3600) / 60);
 
   const href = election.status === 'finalized' || election.status === 'auditing' || election.status === 'rejected'
-    ? `/elections/${election.id}/results`
+    ? `/elections/${election.rlaPollId || election.id}/results`
     : `/elections/${election.id}`;
 
   // RLA progress bar
@@ -49,64 +50,24 @@ export default function ElectionCard({ election }: { election: ElectionData }) {
   const rlaPct = rlaTotal > 0 ? Math.round((rlaVerified / rlaTotal) * 100) : 0;
 
   return (
-    <Link href={href} className="block group">
-      <div className="px-5 py-4 rounded-lg border border-sv-border-subtle bg-sv-surface
-        hover:border-sv-border hover:bg-sv-surface-hover hover:shadow-glow-sm
-        transition-all duration-200 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-sm font-semibold text-sv-text-primary group-hover:text-white transition-colors">
-                {election.name}
-              </h3>
-              <span className={`sv-tag ${config.bg} ${config.text}`}>
-                <span className={`sv-badge-dot ${config.dot}`} />
-                {config.label}
-              </span>
-              {election.category && (
-                <span className="sv-tag bg-sv-surface-2 text-sv-text-muted">
-                  {election.category}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-xs text-sv-text-muted">
-              {election.status === 'new' && (
-                <span>{election.voterCount}/{election.maxVoters} signed up</span>
-              )}
-              {election.status === 'active' && (
-                <span>{election.voterCount} voted &middot; {hours}h {minutes}m remaining</span>
-              )}
-              {election.status === 'auditing' && election.rlaProgress && (
-                <div className="flex items-center gap-3">
-                  <span>
-                    PM {election.rlaProgress.pmVerified}/{election.rlaProgress.pmTotal} &middot;
-                    TV {election.rlaProgress.tvVerified}/{election.rlaProgress.tvTotal}
-                  </span>
-                  <div className="w-20 h-1 bg-sv-surface-2 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-sv-warning rounded-full transition-all"
-                      style={{ width: `${rlaPct}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              {election.status === 'finalized' && (
-                <span>
-                  Yes {election.yesVotes > 0 ? Math.round((election.yesVotes / (election.yesVotes + election.noVotes)) * 100) : 0}%
-                  &middot; No {election.noVotes > 0 ? Math.round((election.noVotes / (election.yesVotes + election.noVotes)) * 100) : 0}%
-                  &middot; {election.voterCount} voters
-                </span>
-              )}
-              {election.status === 'rejected' && (
-                <span className="text-sv-error-light">Result rejected</span>
-              )}
-            </div>
-          </div>
-          <svg className="w-4 h-4 text-sv-text-disabled group-hover:text-sv-accent transition-colors"
-            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
+    <Link href={href} className="group grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-center py-6 border-b border-border-dark hover:bg-zinc-900/50 transition-colors duration-150 px-4 -mx-4">
+      <div className="col-span-5">
+        <h3 className="text-lg font-medium text-white group-hover:text-primary transition-colors">
+          {election.name}
+        </h3>
+        <div className="md:hidden mt-1 text-sm text-zinc-500">{election.category}</div>
+      </div>
+      <div className="col-span-3 hidden md:block">
+        <span className="text-base font-normal text-zinc-500">{election.category}</span>
+      </div>
+      <div className="col-span-2 flex items-center gap-3">
+        <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`}></span>
+        <span className={`text-sm ${config.text}`}>{config.label}</span>
+      </div>
+      <div className="col-span-2 text-right">
+        <span className="text-base font-normal text-zinc-300 tabular-nums">
+          {election.status === 'finalized' ? (election.yesVotes + election.noVotes) : election.voterCount}
+        </span>
       </div>
     </Link>
   );

@@ -3,9 +3,15 @@ import { exec } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const PROOFS_DIR = path.resolve(process.cwd(), '../proofs-web');
-const STATUS_FILE = path.join(PROOFS_DIR, 'status.json');
 const PROJECT_ROOT = path.resolve(process.cwd(), '..');
+
+function getProofsDir(pollId: number | string): string {
+  return path.resolve(process.cwd(), `../proofs-web/poll-${pollId}`);
+}
+
+function getStatusFile(pollId: number | string): string {
+  return path.join(getProofsDir(pollId), 'status.json');
+}
 
 /**
  * POST /api/coordinator/process
@@ -24,8 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    if (fs.existsSync(STATUS_FILE)) {
-      const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+    const { pollId } = req.query;
+    const pollIdStr = pollId !== undefined ? pollId.toString() : '0';
+    const statusFile = getStatusFile(pollIdStr);
+
+    if (fs.existsSync(statusFile)) {
+      const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
       return res.status(200).json({ success: true, ...status });
     }
     return res.status(200).json({ success: true, status: 'not-started' });
@@ -36,16 +46,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const { pollId } = req.body;
+    const pollIdStr = pollId !== undefined ? pollId.toString() : '0';
+    const statusFile = getStatusFile(pollIdStr);
+    const proofsDir = getProofsDir(pollIdStr);
+
+    // Ensure poll-specific directory exists
+    if (!fs.existsSync(proofsDir)) {
+      fs.mkdirSync(proofsDir, { recursive: true });
+    }
+
     // Check if already running
-    if (fs.existsSync(STATUS_FILE)) {
-      const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+    if (fs.existsSync(statusFile)) {
+      const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
       if (['starting', 'time-traveling', 'merging-trees', 'computing-inputs'].includes(status.status)) {
         return res.status(200).json({ success: true, status: status.status, message: 'Already running' });
       }
     }
 
     // Spawn commitment extraction script (no proof generation)
-    const cmd = `cd "${PROJECT_ROOT}" && npx hardhat run scripts/coordinator-commitments.ts --network localhost`;
+    const cmd = `cd "${PROJECT_ROOT}" && POLL_ID=${pollIdStr} OUTPUT_DIR="${proofsDir}" npx hardhat run scripts/coordinator-commitments.ts --network localhost`;
 
     exec(cmd, { maxBuffer: 10 * 1024 * 1024, timeout: 600000 }, (error, stdout, stderr) => {
       if (error) {
@@ -63,6 +83,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (err: any) {
     console.error('process error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start commitment extraction',
+      details: err.message,
+      suggestion: 'Check that the hardhat node is running and the poll exists',
+    });
   }
 }

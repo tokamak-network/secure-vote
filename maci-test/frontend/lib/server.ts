@@ -63,6 +63,7 @@ export const MACI_RLA_ABI = parseAbi([
   'function nextPollId() view returns (uint256)',
   'function pmBatchVerified(uint256, uint256) view returns (bool)',
   'function tvBatchVerified(uint256, uint256) view returns (bool)',
+  'function pollToAuditId(address poll) view returns (uint256)',
 ]);
 
 export function getAddresses() {

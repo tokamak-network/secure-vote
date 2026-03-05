@@ -30,16 +30,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { Keypair, PCommand, PrivKey, PubKey } = await import('maci-domainobjs');
     const { genRandomSalt } = await import('maci-crypto');
 
-    const { poll: pollAddress, coordinatorPubKey: coordPubKeyStr } = getAddresses();
-    if (!pollAddress) {
-      return res.status(500).json({ success: false, error: 'Poll address not configured' });
+    // Get coordinator public key for THIS poll
+    const configPath = require('path').resolve(process.cwd(), '..', 'deploy-config.json');
+    const config = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+
+    let coordPubKeyStr: string;
+    let pollAddress: `0x${string}`;
+
+    // Check if this is a multi-poll setup
+    if (config.polls && config.polls[pollId.toString()]) {
+      const pollConfig = config.polls[pollId.toString()];
+      coordPubKeyStr = pollConfig.coordinatorPubKey;
+      pollAddress = pollConfig.pollAddress;
+    } else if (pollId === 0 || pollId.toString() === config.pollId) {
+      // Fallback to legacy single-poll config (Poll #0)
+      coordPubKeyStr = config.coordinatorPubKey || process.env.NEXT_PUBLIC_COORDINATOR_PUB_KEY!;
+      pollAddress = config.pollAddress || process.env.NEXT_PUBLIC_POLL_ADDRESS as `0x${string}`;
+    } else {
+      return res.status(500).json({ success: false, error: `Poll ${pollId} configuration not found` });
+    }
+
+    if (!pollAddress || !coordPubKeyStr) {
+      return res.status(500).json({ success: false, error: 'Poll configuration incomplete' });
     }
 
     // Reconstruct voter keypair (current key used for signing)
     const voterPrivKey = PrivKey.deserialize(voterKey.privKey);
     const voterPubKey = PubKey.deserialize(voterKey.pubKey);
 
-    // Reconstruct coordinator public key
+    // Reconstruct coordinator public key for THIS poll
     const coordPubKey = PubKey.deserialize(coordPubKeyStr);
 
     // For key-change: newPubKey tells MACI to associate this voter with a new key.
